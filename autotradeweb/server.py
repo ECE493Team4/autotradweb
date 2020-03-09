@@ -28,7 +28,7 @@ class Stock(db.Model):
     id = db.Column(db.String(80), primary_key=True)
     symbol = db.Column(db.String(80))
     name = db.Column(db.String(80), nullable=False)
-    # value = db.Column(db.Float(), nullable=False)
+    value = db.Column(db.Float(), nullable=False)
     datetime = db.Column(db.DateTime)
 
 
