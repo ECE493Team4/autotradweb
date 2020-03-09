@@ -152,7 +152,7 @@ DASH.layout = html.Div(
 
 @DASH.callback(Output('stock-dropdown', 'options'),
                [Input('stock-dropdown', 'value')])
-def set_discord_server_options(v):
+def set_stock_timeline_options(v):
     stocks = list(db.session.query(Stock.name, Stock.id))
     if stocks:
         return [{"label": "{} (id: {})".format(name, id), "value": id} for name, id in stocks]
@@ -166,7 +166,7 @@ def set_discord_server_options(v):
                     Input("stock-dropdown", 'value'),
                     Input("date-binning-slider", "value")
                 ])
-def update_timeline_messages(start_date, end_date, stock_id, bin):
+def update_stock_timeline(start_date, end_date, stock_id, bin):
     stock_ticks = list(db.session.query(func.count(Stock.id), Stock.datetime)
                     .filter(
                         func.date(Stock.datetime) >= start_date,
@@ -201,7 +201,7 @@ DASH.scripts.config.serve_locally = True
 
 
 @APP.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
+def stock_timeline():
     db.create_all()
     db.session.commit()
     return DASH.index()
