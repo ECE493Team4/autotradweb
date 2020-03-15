@@ -42,7 +42,7 @@ def main(argv=sys.argv[1:]) -> int:
     args = parser.parse_args(argv)
 
     # TODO: added for simple user add
-    create_user(username="foo", password="bar")
+    # create_user(username="foo", password="bar")
 
     __log__.info("starting server: host: {} port: {}".format(args.host, args.port))
     APP.config['SQLALCHEMY_DATABASE_URI'] = args.database
