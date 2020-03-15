@@ -202,7 +202,6 @@ def set_stock_timeline_options(v):
     return [{}]
 
 
-
 @DASH.callback(Output('stock-value-timeline-graph', 'figure'),
                [
                     Input('date-picker-range', 'start_date'),
@@ -243,6 +242,7 @@ def update_stock_timeline(start_date, end_date, stock_id, bin):
 DASH.config.suppress_callback_exceptions = True
 DASH.css.config.serve_locally = True
 DASH.scripts.config.serve_locally = True
+
 
 @APP.route('/dashboard', methods=['GET', 'POST'])
 @login_required
