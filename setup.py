@@ -78,6 +78,7 @@ setup(
         "cheroot",
         "flask",
         "flask-sqlalchemy",
+        "flask-simplelogin",
         "dash",
         "dash-html-components",
         "dash-core-components",
