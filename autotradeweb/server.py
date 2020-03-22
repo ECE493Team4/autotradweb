@@ -17,7 +17,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required
 from sqlalchemy import func
 
-from autotradeweb.login_util import create_user
 
 __log__ = getLogger(__name__)
 

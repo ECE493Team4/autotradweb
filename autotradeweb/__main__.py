@@ -10,7 +10,6 @@ from logging import getLogger
 from cheroot.wsgi import Server as WSGIServer, PathInfoDispatcher
 
 from autotradeweb.common import add_log_parser
-from autotradeweb.login_util import create_user
 from autotradeweb.server import APP, DEFAULT_SQLITE_PATH
 
 __log__ = getLogger(__name__)
