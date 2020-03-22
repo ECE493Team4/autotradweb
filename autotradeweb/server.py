@@ -17,7 +17,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required
 from sqlalchemy import func
 
-from autotradeweb.login_util import validate_login, create_user
 
 __log__ = getLogger(__name__)
 
@@ -26,6 +25,22 @@ DEFAULT_SQLITE_PATH = "sqlite:///autotradeweb.db"
 APP.config['SQLALCHEMY_DATABASE_URI'] = DEFAULT_SQLITE_PATH
 APP.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(APP)
+
+
+def validate_login(user):
+    db_user = User.query.filter_by(username=user['username']).first()
+    if db_user is None:
+        # no user of that username
+        __log__.debug(f"login on nonexistant user: {user['username']}")
+        return False
+    if db_user.password == user["password"]:
+        __log__.debug(f"logged in user: {user['username']}")
+        return True
+    else:
+        # wrong password
+        __log__.debug(f"invalid password for user: {user['username']}")
+        return False
+
 
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
 
@@ -39,10 +54,14 @@ class Stock(db.Model):
 
 
 class User(db.Model):
-    username = db.Column(db.String(80), primary_key=True)
-    password = db.Column(db.String(80), primary_key=True)
+    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    username = db.Column(db.String(80), index=True, unique=True, nullable=False)
+    password = db.Column(db.String(80), index=True, unique=True, nullable=False)
     bank = db.Column(db.Float(), default=0.0, nullable=False)
     trades = db.relationship('StockTrade', backref='user', lazy=True)
+
+    def __repr__(self):
+        return '<User {}>'.format(self.username)
 
 
 class StockTrade(db.Model):
@@ -59,6 +78,7 @@ db.create_all()
 ##################
 
 
+
 @APP.route('/', methods=["GET"])
 def index():
     # parse request arguments
@@ -72,16 +92,16 @@ def register():
 
 @APP.route("/register", methods=["POST"])
 def register_submit():
-    try:
-        username = request.form.get('username')
-        password = request.form.get('password')
-        # TODO: notify usercreation redirect to login
-        return redirect("/login")
-    except:
-        return Response(
-            "Username already taken.",
-            status=400,
-        )
+    username = request.form.get('email')
+    password = request.form.get('psw')
+
+    new_user = User(username=username, password=password)
+    print(new_user)
+    db.session.add(new_user)
+    db.session.commit()
+
+    # TODO: notify usercreation redirect to login
+    return redirect("/login")
 
 
 @APP.route('/static/<path:path>')
