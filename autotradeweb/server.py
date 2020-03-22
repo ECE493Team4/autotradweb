@@ -29,20 +29,18 @@ db = SQLAlchemy(APP)
 
 
 def validate_login(user):
-    # TODO: swap with database version
-    print(f'testing login{user}')
-
-    user = User.query.filter_by(username=user['username']).first()
-    print(f'testing login{user}')
-    # db_users = json.load(open('users.json'))
-    return True
-    # if not db_users.get(user['username']):
-    #     return False
-    # stored_password = db_users[user['username']]['password']
-    # if check_password_hash(stored_password, user['password']):
-    #     return True
-    return False
-
+    db_user = User.query.filter_by(username=user['username']).first()
+    if db_user is None:
+        # no user of that username
+        __log__.debug(f"login on nonexistant user: {user['username']}")
+        return False
+    if db_user.password == user["password"]:
+        __log__.debug(f"logged in user: {user['username']}")
+        return True
+    else:
+        # wrong password
+        __log__.debug(f"invalid password for user: {user['username']}")
+        return False
 
 
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
@@ -62,7 +60,6 @@ class User(db.Model):
     password = db.Column(db.String(80), index=True, unique=True, nullable=False)
     bank = db.Column(db.Float(), default=0.0, nullable=False)
     trades = db.relationship('StockTrade', backref='user', lazy=True)
-
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
