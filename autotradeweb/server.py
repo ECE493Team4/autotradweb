@@ -17,7 +17,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required
 from sqlalchemy import func
 
-
 __log__ = getLogger(__name__)
 
 APP = Flask(__name__)
@@ -270,3 +269,15 @@ def stock_timeline():
     db.create_all()
     db.session.commit()
     return DASH.index()
+
+
+@APP.route("/account")
+@login_required
+def account():
+    return render_template("account.html")
+
+
+@APP.route("/history")
+@login_required
+def history():
+    return render_template("history.html")
