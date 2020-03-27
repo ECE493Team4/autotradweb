@@ -18,6 +18,8 @@ from flask_simplelogin import SimpleLogin, login_required
 
 __log__ = getLogger(__name__)
 
+from sqlalchemy import desc, func
+
 APP = Flask(__name__)
 
 
@@ -222,15 +224,14 @@ def set_stock_timeline_options(v):
                 ])
 @login_required
 def update_stock_timeline(start_date, end_date, stock_id):
-    print(stock_id)
-    from sqlalchemy import func
-    for stock_ in stock_id:
-        print(stock_id[0][0])
-        stock_ticks = list(db.session.query(stock_data).filter(stock_data.stock_name.in_(stock_id)).all())
-                          # TODO this works but other options like == are having issues
-                           # .group_by(func.strftime(date_bins[bin], stock_data.time_stamp))
-
-        print(stock_ticks)
+    stock_ticks = list(db.session.query(stock_data)
+                       .filter(
+                            stock_data.stock_name.in_(stock_id),
+                            func.date(stock_data.time_stamp) >= start_date,
+                            func.date(stock_data.time_stamp) <= end_date,
+                        )
+                       .order_by(desc(stock_data.time_stamp))
+                       .all())
     return {
         'data': [
             {
@@ -238,7 +239,7 @@ def update_stock_timeline(start_date, end_date, stock_id):
                 'x': [m.time_stamp for m in stock_ticks],
                 'type': 'scatter',
                 'name': 'SF',
-                'mode': 'markers'
+                'mode': 'lines'
             },
         ],
         'layout': {
