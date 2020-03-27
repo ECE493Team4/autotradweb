@@ -75,7 +75,6 @@ db.create_all()
 
 @APP.route('/', methods=["GET"])
 def index():
-    # parse request arguments
     return render_template('index.html')
 
 
@@ -90,11 +89,10 @@ def register_submit():
     password = request.form.get('psw')
 
     new_user = User(username=username, password=password)
-    print(new_user)
+
     db.session.add(new_user)
     db.session.commit()
 
-    # TODO: notify usercreation redirect to login
     return redirect("/login")
 
 
