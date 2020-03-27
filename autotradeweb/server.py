@@ -130,26 +130,6 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets)
 
-
-slider_dates = {
-    0: "Year",
-    1: "Month",
-    2: "Day",
-    3: "Hour",
-    4: "Minute",
-    5: "Second"
-}
-
-date_bins = {
-    0: "%Y",
-    1: "%Y-%m",
-    2: "%Y-%m-%d",
-    3: "%Y-%m-%d-%H",
-    4: "%Y-%m-%d-%H:%M",
-    5: "%Y-%m-%d-%H:%M:%S"  # TODO: does not work very well should remove?
-}
-
-
 DASH.layout = html.Div(
     style={
         "overflow-x": "hidden"
