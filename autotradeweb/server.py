@@ -161,7 +161,7 @@ DASH.layout = html.Div(
                 dcc.Dropdown(
                     id='stock-dropdown',
                     options=[{}],
-                    multi=True,
+                    multi=False,
                     placeholder="Select a Stock...",
                 ),
                 html.H3(children=["Date Range"]),
@@ -226,7 +226,7 @@ def set_stock_timeline_options(v):
 def update_stock_timeline(start_date, end_date, stock_id):
     stock_ticks = list(db.session.query(stock_data)
                        .filter(
-                            stock_data.stock_name.in_(stock_id),
+                            stock_data.stock_name==stock_id,
                             func.date(stock_data.time_stamp) >= start_date,
                             func.date(stock_data.time_stamp) <= end_date,
                         )
