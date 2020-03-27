@@ -15,11 +15,12 @@ from flask import Flask, render_template, send_from_directory, request, redirect
     url_for, abort, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required
-from sqlalchemy import func
 
 __log__ = getLogger(__name__)
 
 APP = Flask(__name__)
+
+
 DEFAULT_SQLITE_PATH = "sqlite:///autotradeweb.db"
 APP.config['SQLALCHEMY_DATABASE_URI'] = DEFAULT_SQLITE_PATH
 APP.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -42,6 +43,16 @@ def validate_login(user):
 
 
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
+
+
+class stock_data(db.Model):
+    stock_name = db.Column(db.String(80), primary_key=True)
+    time_stamp = db.Column(db.DateTime(), primary_key=True)
+    open = db.Column(db.Float())
+    high = db.Column(db.Float())
+    low = db.Column(db.Float())
+    close = db.Column(db.Float())
+    volume = db.Column(db.Integer())
 
 
 class Stock(db.Model):
@@ -75,7 +86,6 @@ db.create_all()
 ##################
 # main frontend
 ##################
-
 
 
 @APP.route('/', methods=["GET"])
@@ -188,23 +198,6 @@ DASH.layout = html.Div(
                         }
                     }
                 ),
-                html.Div(
-                    children=[
-                        html.H3(children=["Datetime Bin Size"]),
-                        dcc.Slider(
-                            id="date-binning-slider",
-                            min=0,
-                            max=5,
-                            marks=slider_dates,
-                            value=2,
-                        ),
-                    ],
-                    style={
-                        "margin-bottom": "2em",
-                        "padding-left": "2em",
-                        "padding-right": "2em"
-                    }
-                ),
             ]
         )
     ]
@@ -215,9 +208,9 @@ DASH.layout = html.Div(
                [Input('stock-dropdown', 'value')])
 @login_required
 def set_stock_timeline_options(v):
-    stocks = list(db.session.query(Stock.name, Stock.id))
+    stocks = set(db.session.query(stock_data.stock_name))
     if stocks:
-        return [{"label": "{} (id: {})".format(name, id), "value": id} for name, id in stocks]
+        return [{"label": str(stock.stock_name), "value": str(stock.stock_name)} for stock in stocks]
     return [{}]
 
 
@@ -226,24 +219,26 @@ def set_stock_timeline_options(v):
                     Input('date-picker-range', 'start_date'),
                     Input('date-picker-range', 'end_date'),
                     Input("stock-dropdown", 'value'),
-                    Input("date-binning-slider", "value")
                 ])
 @login_required
-def update_stock_timeline(start_date, end_date, stock_id, bin):
-    stock_ticks = list(db.session.query(func.count(Stock.id), Stock.datetime)
-                    .filter(
-                        func.date(Stock.datetime) >= start_date,
-                        func.date(Stock.datetime) <= end_date,
-                        Stock.id.in_(stock_id))
-                    .group_by(func.strftime(date_bins[bin], Stock.datetime)))
+def update_stock_timeline(start_date, end_date, stock_id):
+    print(stock_id)
+    from sqlalchemy import func
+    for stock_ in stock_id:
+        print(stock_id[0][0])
+        stock_ticks = list(db.session.query(stock_data).filter(stock_data.stock_name.in_(stock_id)).all())
+                          # TODO this works but other options like == are having issues
+                           # .group_by(func.strftime(date_bins[bin], stock_data.time_stamp))
+
+        print(stock_ticks)
     return {
         'data': [
             {
-                'y': [str(m[0]) for m in stock_ticks],
-                'x': [m[1] for m in stock_ticks],
+                'y': [str(m.open) for m in stock_ticks],
+                'x': [m.time_stamp for m in stock_ticks],
                 'type': 'scatter',
                 'name': 'SF',
-                'mode': 'lines+markers'
+                'mode': 'markers'
             },
         ],
         'layout': {
