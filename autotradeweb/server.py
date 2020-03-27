@@ -13,7 +13,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 from flask import Flask, render_template, send_from_directory, request, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_simplelogin import SimpleLogin, login_required
+from flask_simplelogin import SimpleLogin, login_required, get_username
+from flask_restx import Api, Resource, fields
 
 __log__ = getLogger(__name__)
 
@@ -238,3 +239,60 @@ def account():
 @login_required
 def history():
     return render_template("history.html")
+
+
+# API definitions
+
+api = Api(APP, version='0.0.0', title='AutoTrade API', doc="/api",
+    description='Official API for AutoTrade',
+)
+
+ns = api.namespace('stock_order', description='stock order operations')
+
+todo = api.model('stock_order', {
+    'stock_name': fields.String(required=True, description="name of the stock"),
+    'command': fields.String(required=True, description='type of stock oreder command')
+})
+
+
+@ns.route("/")
+class StockOrderList(Resource):
+    @login_required(basic=True)
+    @ns.doc('list all stock orders')
+    @ns.marshal_list_with(todo)
+    def get(self):
+        """Get the list of all stock orders for the currently logged in user"""
+
+        # user = get_username()
+
+        # db.session.query(StockOrder).filter(StockOrder.username == user)
+
+        return []
+
+    @login_required(basic=True)
+    @ns.doc('create stock order')
+    @ns.expect(todo)
+    @ns.marshal_with(todo, code=201)
+    def post(self):
+        """Add a stock order to the currently logged in user"""
+        return api.payload, 201
+
+
+@login_required
+@ns.route("/<string:stock_name>")
+@ns.response(404, 'Stock order not found')
+class StockOrder(Resource):
+    @login_required(basic=True)
+    @ns.doc('get_todo')
+    @ns.marshal_with(todo)
+    def get(self, stock_name):
+        """Get a stock orders for the currently logged in user"""
+        # get stock order id
+        return {}
+
+    @login_required(basic=True)
+    @ns.expect(todo)
+    @ns.marshal_with(todo)
+    def put(self, stock_name):
+        """update a stock order for the currently logged in user"""
+        return api.payload
