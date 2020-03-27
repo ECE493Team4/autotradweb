@@ -129,7 +129,7 @@ DASH.layout = html.Div(
                 dcc.DatePickerRange(
                     id='date-picker-range',
                     end_date=datetime.utcnow(),
-                    start_date=datetime.utcnow() - timedelta(days=1)
+                    start_date=datetime.utcnow() - timedelta(days=30)
                 ),
             ],
             style={
