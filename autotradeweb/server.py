@@ -11,8 +11,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from flask import Flask, render_template, send_from_directory, request, redirect, \
-    url_for, abort, Response
+from flask import Flask, render_template, send_from_directory, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required
 
@@ -57,30 +56,14 @@ class stock_data(db.Model):
     volume = db.Column(db.Integer())
 
 
-class Stock(db.Model):
-    id = db.Column(db.String(80), primary_key=True)
-    symbol = db.Column(db.String(80))
-    name = db.Column(db.String(80), nullable=False)
-    value = db.Column(db.Float(), nullable=False)
-    datetime = db.Column(db.DateTime)
-
-
 class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), index=True, unique=True, nullable=False)
     password = db.Column(db.String(80), index=True, unique=True, nullable=False)
     bank = db.Column(db.Float(), default=0.0, nullable=False)
-    trades = db.relationship('StockTrade', backref='user', lazy=True)
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
-
-
-class StockTrade(db.Model):
-    id = db.Column(db.String(80), primary_key=True)
-    bought_stock = db.Column(db.String(80), db.ForeignKey('stock.id'), nullable=False)
-    sold_stock = db.Column(db.String(80), db.ForeignKey('stock.id'), nullable=True)
-    owner = db.Column(db.String(80), db.ForeignKey("user.username"), nullable=False)
 
 
 db.create_all()
