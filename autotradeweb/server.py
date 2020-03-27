@@ -239,7 +239,7 @@ def update_stock_timeline(start_date, end_date, stock_id):
                 'x': [m.time_stamp for m in stock_ticks],
                 'type': 'scatter',
                 'name': 'SF',
-                'mode': 'lines'
+                'mode': 'markers'
             },
         ],
         'layout': {
