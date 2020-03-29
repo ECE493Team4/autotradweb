@@ -49,7 +49,7 @@ SL_APP = SimpleLogin(APP, login_checker=validate_login)
 
 
 class trade(db.Model):
-    trade_id = db.Column(db.Integer(), autoincrement=True, primary_key=True)
+    trade_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
     session_id = db.Column(db.Integer())
     trade_type = db.Column(db.String(80))
     price = db.Column(db.Float())
@@ -68,7 +68,7 @@ class trade(db.Model):
 
 
 class trading_session(db.Model):
-    session_id = db.Column(db.Integer(), primary_key=True)
+    session_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
     username = db.Column(db.String(80))
     ticker = db.Column(db.String(80))
     start_time = db.Column(db.DateTime())
@@ -396,6 +396,7 @@ trade_ns = api.namespace('trades', description='stock trade operations')
 TRADE = api.model('trade', {
     'trade_id': fields.Integer(required=False, description="id of of the stock trade"),
     'session_id': fields.Integer(required=False, description="id of the related stock trading session"),
+    'trade_type': fields.String(required=True, description="type of trade (BUY|SELL)"),
     'price': fields.Float(required=True, description="name of the stock"),
     'volume': fields.Integer(required=True, default=False),
     'time_stamp': fields.DateTime(),
@@ -425,14 +426,50 @@ class TradeList(Resource):
             .all()
         return [trade_.to_dict() for trade_ in trades]
 
-    @login_required(basic=True)
+    # @login_required(basic=True) # TODO: testing
     @trade_ns.doc('create trade')
     @trade_ns.expect(TRADE)
     @trade_ns.marshal_with(TRADE, code=201)
     def post(self):
         """Add a stock order to the currently logged in user"""
-        # TODO: implement
-        return api.payload, 201
+        new_trade = api.payload
+
+        # TODO: trade type is BUY or SELL
+        print(new_trade)
+        if new_trade["trade_type"] not in ["BUY", "SELL"]:
+            abort(400, "trade_type must be either BUY or SELL")
+
+        # TODO: ensure volume>1
+        if new_trade["volume"] < 1:
+            abort(400, "volume must be a integer equal to or greater than 1")
+
+        # TODO: get the session id by the currently non_paused trading session
+        # TODO: testing
+        # username = get_username()
+        username = 'cgoud'
+        trading_session_id = db.session.query(trading_session.session_id) \
+            .filter(
+                trading_session.username == username,
+                trading_session.session_id == new_trade["session_id"]
+            )\
+            .first()
+        if trading_session_id is None:
+            abort(404, "trading session not found")
+
+        # TODO: get the price by the known  stock values?
+        # TODO: testing
+        new_trade["price"] = 420.69
+
+        new_trade_db = trade(
+            price=new_trade["price"],
+            trade_type=new_trade["trade_type"],
+            volume=new_trade["volume"],
+            session_id=new_trade["session_id"],
+            time_stamp=new_trade["time_stamp"]
+        )
+        db.session.add(new_trade_db)
+        db.session.commit()
+        return new_trade_db.to_dict(), 201
 
 
 @trade_ns.route("/<int:trade_id>")
@@ -481,7 +518,7 @@ class Trade(Resource):
         trade_ = db.session.query(trade) \
             .filter(
             trade.trade_id == trade_id,
-            trade.trade_id.in_(trading_sessions_ids)
+            trade.session_id.in_(trading_sessions_ids)
         ) \
             .first()
         # TODO: now we got the trade update it
