@@ -348,14 +348,12 @@ class TradingSessionList(Resource):
 @trading_sessions_ns.route("/<int:session_id>")
 @trading_sessions_ns.response(404, 'trading session not found')
 class TradingSession(Resource):
-    # @login_required(basic=True) # TODO: testing
+    @login_required(basic=True)
     @trading_sessions_ns.doc('get_todo')
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
     def get(self, session_id):
         """Get a stock orders for the currently logged in user"""''
-        # TODO: testing
-        # username = get_username()
-        username = 'cgoud'
+        username = get_username()
         trading_session_ = db.session.query(trading_session)\
             .filter(
                 trading_session.session_id == session_id,
