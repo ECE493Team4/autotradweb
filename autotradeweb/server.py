@@ -313,7 +313,7 @@ class TradingSessionList(Resource):
     @trading_sessions_ns.doc('list all stock orders')
     @trading_sessions_ns.marshal_list_with(TRADING_SESSION)
     def get(self):
-        """Get the list of all stock orders for the currently logged in user"""
+        """Get the list of all trade sessions for the currently logged in user"""
         username = get_username()
         trading_sessions = db.session.query(trading_session)\
             .filter(
@@ -327,7 +327,7 @@ class TradingSessionList(Resource):
     @trading_sessions_ns.expect(TRADING_SESSION)
     @trading_sessions_ns.marshal_with(TRADING_SESSION, code=201)
     def post(self):
-        """Add a stock order to the currently logged in user"""
+        """Add a trade session to the currently logged in user"""
         new_trading_session = api.payload
 
         # TODO: ensure ticker is valid
@@ -352,7 +352,7 @@ class TradingSession(Resource):
     @trading_sessions_ns.doc('get_todo')
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
     def get(self, session_id):
-        """Get a stock orders for the currently logged in user"""''
+        """Get a trade session for the currently logged in user"""''
         username = get_username()
         trading_session_ = db.session.query(trading_session)\
             .filter(
@@ -364,15 +364,14 @@ class TradingSession(Resource):
             abort(404, 'trading session not found')
         return trading_session_.to_dict()
 
+
+@trading_sessions_ns.route("/<int:session_id>/pause")
+class TradingSessionPause(Resource):
     @login_required(basic=True)
-    @trading_sessions_ns.expect(TRADING_SESSION)
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
-    def put(self, session_id):
-        """update a stock order for the currently logged in user"""
-        # TODO: implement
-        # TODO: testing
-        # username = get_username()
-        username = 'cgoud'
+    def post(self, session_id):
+        """Pause a trading session"""
+        username = get_username()
         trading_session_ = db.session.query(trading_session) \
             .filter(
             trading_session.session_id == session_id,
@@ -381,12 +380,53 @@ class TradingSession(Resource):
             .first()
         if not trading_session_:
             abort(404, 'trading session not found')
-        # TODO: update the trading session
+        trading_session_.is_paused = True
+        db.session.commit()
+        return trading_session_
 
-        # TODO: return updated trading session
 
-        # TODO: maybe user pathful rest instead of PUT?
-        return api.payload
+@trading_sessions_ns.route("/<int:session_id>/start")
+class TradingSessionResume(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def post(self, session_id):
+        """Restart/unpause a trading session"""
+        username = get_username()
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        trading_session_.is_paused = False
+        db.session.commit()
+        return trading_session_
+
+
+@trading_sessions_ns.route("/<int:session_id>/finish")
+class TradingSessionResume(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def post(self, session_id):
+        """Finish a trading session
+
+        .. warning::
+            This action is irreversible
+        """
+        username = get_username()
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        trading_session_.is_finished = True
+        db.session.commit()
+        return trading_session_
 
 
 trade_ns = api.namespace('trades', description='stock trade operations')
@@ -404,10 +444,9 @@ TRADE = api.model('trade', {
 @trade_ns.route("/")
 class TradeList(Resource):
     @login_required(basic=True)
-    @trade_ns.doc('list all trades')
     @trade_ns.marshal_list_with(TRADE)
     def get(self):
-        """Get the list of all stock orders for the currently logged in user"""
+        """Get the list of all stock trades for the currently logged in user"""
         username = get_username()
         trading_sessions_ids = db.session.query(trading_session.session_id) \
             .filter(
@@ -422,11 +461,10 @@ class TradeList(Resource):
         return [trade_.to_dict() for trade_ in trades]
 
     @login_required(basic=True)
-    @trade_ns.doc('create trade')
     @trade_ns.expect(TRADE)
     @trade_ns.marshal_with(TRADE, code=201)
     def post(self):
-        """Add a stock order to the currently logged in user"""
+        """Add a stock trade to the currently logged in user"""
         new_trade = api.payload
 
         # trade type is BUY or SELL
@@ -436,6 +474,10 @@ class TradeList(Resource):
         # ensure volume>1
         if new_trade["volume"] < 1:
             abort(400, "volume must be a integer equal to or greater than 1")
+
+        # ensure price>0
+        if new_trade["price"] <= 0:
+            abort(400, "price must be greater than 0")
 
         # get the session id by the currently non_paused trading session
         username = get_username()
@@ -449,10 +491,6 @@ class TradeList(Resource):
             .first()
         if trading_session_id is None:
             abort(404, "trading session not found")
-
-        # TODO: get the price by the known  stock values?
-        # TODO: testing
-        new_trade["price"] = 420.69
 
         new_trade_db = trade(
             price=new_trade["price"],
@@ -470,17 +508,15 @@ class TradeList(Resource):
 @trade_ns.response(404, 'trade not found')
 class Trade(Resource):
     @login_required(basic=True)
-    @trade_ns.doc('get_todo')
     @trade_ns.marshal_with(TRADE)
     def get(self, trade_id):
-        """Get a trade orders for the currently logged in user"""
+        """Get a stock trade for the currently logged in user"""
         username = get_username()
         trading_sessions_ids = db.session.query(trading_session.session_id)\
             .filter(
             trading_session.username == username
             )\
             .all()
-        # TODO: ensure that a user only gets the trades related to themselves
         trade_ = db.session.query(trade)\
             .filter(
                 trade.trade_id == trade_id,
@@ -491,30 +527,3 @@ class Trade(Resource):
             abort(404, 'trade not found')
         return trade_.to_dict()
 
-    @login_required(basic=True)
-    @trade_ns.expect(TRADE)
-    @trade_ns.marshal_with(TRADE)
-    def put(self, trade_id):
-        """update a stock order for the currently logged in user"""
-        # TODO: implement
-        # TODO: testing
-        # username = get_username()
-        username = 'cgoud'
-        trading_sessions_ids = db.session.query(trading_session.session_id) \
-            .filter(
-            trading_session.username == username
-        ) \
-            .all()
-        # TODO: ensure that a user only gets the trades related to themselves
-        trade_ = db.session.query(trade) \
-            .filter(
-            trade.trade_id == trade_id,
-            trade.session_id.in_(trading_sessions_ids)
-        ) \
-            .first()
-        # TODO: now we got the trade update it
-
-        # TODO: commit the trade update
-
-        # TODO: return updated trade
-        return api.payload
