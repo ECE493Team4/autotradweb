@@ -405,28 +405,25 @@ TRADE = api.model('trade', {
 
 @trade_ns.route("/")
 class TradeList(Resource):
-    # @login_required(basic=True) # TODO: testing
+    @login_required(basic=True)
     @trade_ns.doc('list all trades')
     @trade_ns.marshal_list_with(TRADE)
     def get(self):
         """Get the list of all stock orders for the currently logged in user"""
-
-        # TODO: get trade sessions for user
-
-        # TODO: join trade sessions to trades
-        # username = get_username()
-        username = 'cgoud'
+        username = get_username()
         trading_sessions_ids = db.session.query(trading_session.session_id) \
             .filter(
                 trading_session.username == username
             ) \
             .all()
         trades = db.session.query(trade)\
-            .filter(trade.trade_id.in_(trading_sessions_ids))\
+            .filter(
+                trade.session_id.in_(trading_sessions_ids)
+            )\
             .all()
         return [trade_.to_dict() for trade_ in trades]
 
-    # @login_required(basic=True) # TODO: testing
+    @login_required(basic=True)
     @trade_ns.doc('create trade')
     @trade_ns.expect(TRADE)
     @trade_ns.marshal_with(TRADE, code=201)
@@ -434,23 +431,22 @@ class TradeList(Resource):
         """Add a stock order to the currently logged in user"""
         new_trade = api.payload
 
-        # TODO: trade type is BUY or SELL
-        print(new_trade)
+        # trade type is BUY or SELL
         if new_trade["trade_type"] not in ["BUY", "SELL"]:
             abort(400, "trade_type must be either BUY or SELL")
 
-        # TODO: ensure volume>1
+        # ensure volume>1
         if new_trade["volume"] < 1:
             abort(400, "volume must be a integer equal to or greater than 1")
 
-        # TODO: get the session id by the currently non_paused trading session
-        # TODO: testing
-        # username = get_username()
-        username = 'cgoud'
+        # get the session id by the currently non_paused trading session
+        username = get_username()
         trading_session_id = db.session.query(trading_session.session_id) \
             .filter(
                 trading_session.username == username,
-                trading_session.session_id == new_trade["session_id"]
+                trading_session.session_id == new_trade["session_id"],
+                trading_session.is_finished == False,
+                trading_session.is_paused == False,
             )\
             .first()
         if trading_session_id is None:
