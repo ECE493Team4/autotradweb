@@ -14,11 +14,12 @@ from dash.dependencies import Input, Output
 from flask import Flask, render_template, send_from_directory, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required, get_username
-from flask_restx import Api, Resource, fields
+from flask_restx import Api, Resource, fields, abort
+from sqlalchemy import desc, func
+
 
 __log__ = getLogger(__name__)
 
-from sqlalchemy import desc, func
 
 APP = Flask(__name__)
 
@@ -45,6 +46,47 @@ def validate_login(user):
 
 
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
+
+
+class trade(db.Model):
+    trade_id = db.Column(db.Integer(), autoincrement=True, primary_key=True)
+    session_id = db.Column(db.Integer())
+    trade_type = db.Column(db.String(80))
+    price = db.Column(db.Float())
+    volume = db.Column(db.Integer())
+    time_stamp = db.Column(db.DateTime())
+
+    def to_dict(self):
+        return {
+            "trade_id": int(self.trade_id),
+            "session_id": int(self.session_id),
+            "price": float(self.price),
+            "volume": int(self.volume),
+            "trade_type": str(self.trade_type),
+            "time_stamp": self.time_stamp,
+        }
+
+
+class trading_session(db.Model):
+    session_id = db.Column(db.Integer(), primary_key=True)
+    username = db.Column(db.String(80))
+    ticker = db.Column(db.String(80))
+    start_time = db.Column(db.DateTime())
+    end_time = db.Column(db.DateTime())
+    is_paused = db.Column(db.Boolean())
+    is_finished = db.Column(db.Boolean())
+
+    # TODO: is best way to serialize to dict?
+    def to_dict(self):
+        return {
+            "session_id": int(self.session_id),
+            "username": str(self.username),
+            "ticker": str(self.ticker),
+            "is_paused": self.is_paused,
+            "is_finished": self.is_finished,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+        }
 
 
 class stock_data(db.Model):
@@ -241,58 +283,210 @@ def history():
     return render_template("history.html")
 
 
+####################
 # API definitions
+####################
 
-api = Api(APP, version='0.0.0', title='AutoTrade API', doc="/api",
+api = Api(
+    APP,
+    version='0.0.0',
+    title='AutoTrade API',
+    doc="/api",
     description='Official API for AutoTrade',
 )
 
-ns = api.namespace('stock_order', description='stock order operations')
+trading_sessions_ns = api.namespace('trades_sessions', description='trading session operations')
 
-todo = api.model('stock_order', {
-    'stock_name': fields.String(required=True, description="name of the stock"),
-    'command': fields.String(required=True, description='type of stock oreder command')
+TRADING_SESSION = api.model('trading_sessions', {
+    'session_id': fields.Integer(required=False, description="id of the trading session"),
+    'ticker': fields.String(required=True, description="name of the stock"),
+    'is_paused': fields.Boolean(required=True, default=False),
+    'is_finished': fields.Boolean(required=True, default=False),
+    'start_time': fields.DateTime(),
+    'end_time': fields.DateTime(),
 })
 
 
-@ns.route("/")
-class StockOrderList(Resource):
+@trading_sessions_ns.route("/")
+class TradingSessionList(Resource):
     @login_required(basic=True)
-    @ns.doc('list all stock orders')
-    @ns.marshal_list_with(todo)
+    @trading_sessions_ns.doc('list all stock orders')
+    @trading_sessions_ns.marshal_list_with(TRADING_SESSION)
+    def get(self):
+        """Get the list of all stock orders for the currently logged in user"""
+        username = get_username()
+        trading_sessions = db.session.query(trading_session)\
+            .filter(
+                trading_session.username == username
+            )\
+            .all()
+        return [trading_session_.to_dict() for trading_session_ in trading_sessions]
+
+    @login_required(basic=True)
+    @trading_sessions_ns.doc('create trading session')
+    @trading_sessions_ns.expect(TRADING_SESSION)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION, code=201)
+    def post(self):
+        """Add a stock order to the currently logged in user"""
+        new_trading_session = api.payload
+
+        # TODO: ensure ticker is valid
+        username = get_username()
+        new_trading_session_db = trading_session(
+            username=username,
+            start_time=new_trading_session["start_time"],
+            end_time=new_trading_session.get("end_time"),
+            ticker=new_trading_session["ticker"],
+            is_paused=new_trading_session["is_paused"],
+            is_finished=new_trading_session["is_finished"]
+        )
+        db.session.add(new_trading_session_db)
+        db.session.commit()
+        return new_trading_session_db.to_dict(), 201
+
+
+@trading_sessions_ns.route("/<int:session_id>")
+@trading_sessions_ns.response(404, 'trading session not found')
+class TradingSession(Resource):
+    # @login_required(basic=True) # TODO: testing
+    @trading_sessions_ns.doc('get_todo')
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def get(self, session_id):
+        """Get a stock orders for the currently logged in user"""''
+        # TODO: testing
+        # username = get_username()
+        username = 'cgoud'
+        trading_session_ = db.session.query(trading_session)\
+            .filter(
+                trading_session.session_id == session_id,
+                trading_session.username == username
+            )\
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        return trading_session_.to_dict()
+
+    @login_required(basic=True)
+    @trading_sessions_ns.expect(TRADING_SESSION)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def put(self, session_id):
+        """update a stock order for the currently logged in user"""
+        # TODO: implement
+        # TODO: testing
+        # username = get_username()
+        username = 'cgoud'
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        # TODO: update the trading session
+
+        # TODO: return updated trading session
+
+        # TODO: maybe user pathful rest instead of PUT?
+        return api.payload
+
+
+trade_ns = api.namespace('trades', description='stock trade operations')
+
+TRADE = api.model('trade', {
+    'trade_id': fields.Integer(required=False, description="id of of the stock trade"),
+    'session_id': fields.Integer(required=False, description="id of the related stock trading session"),
+    'price': fields.Float(required=True, description="name of the stock"),
+    'volume': fields.Integer(required=True, default=False),
+    'time_stamp': fields.DateTime(),
+})
+
+
+@trade_ns.route("/")
+class TradeList(Resource):
+    # @login_required(basic=True) # TODO: testing
+    @trade_ns.doc('list all trades')
+    @trade_ns.marshal_list_with(TRADE)
     def get(self):
         """Get the list of all stock orders for the currently logged in user"""
 
-        # user = get_username()
+        # TODO: get trade sessions for user
 
-        # db.session.query(StockOrder).filter(StockOrder.username == user)
-
-        return []
+        # TODO: join trade sessions to trades
+        # username = get_username()
+        username = 'cgoud'
+        trading_sessions_ids = db.session.query(trading_session.session_id) \
+            .filter(
+                trading_session.username == username
+            ) \
+            .all()
+        trades = db.session.query(trade)\
+            .filter(trade.trade_id.in_(trading_sessions_ids))\
+            .all()
+        return [trade_.to_dict() for trade_ in trades]
 
     @login_required(basic=True)
-    @ns.doc('create stock order')
-    @ns.expect(todo)
-    @ns.marshal_with(todo, code=201)
+    @trade_ns.doc('create trade')
+    @trade_ns.expect(TRADE)
+    @trade_ns.marshal_with(TRADE, code=201)
     def post(self):
         """Add a stock order to the currently logged in user"""
+        # TODO: implement
         return api.payload, 201
 
 
-@login_required
-@ns.route("/<string:stock_name>")
-@ns.response(404, 'Stock order not found')
-class StockOrder(Resource):
-    @login_required(basic=True)
-    @ns.doc('get_todo')
-    @ns.marshal_with(todo)
-    def get(self, stock_name):
-        """Get a stock orders for the currently logged in user"""
+@trade_ns.route("/<int:trade_id>")
+@trade_ns.response(404, 'trade not found')
+class Trade(Resource):
+    # @login_required(basic=True) # TODO: testing
+    @trade_ns.doc('get_todo')
+    @trade_ns.marshal_with(TRADE)
+    def get(self, trade_id):
+        """Get a trade orders for the currently logged in user"""
         # get stock order id
-        return {}
+        # TODO: testing
+        # username = get_username()
+        username = 'cgoud'
+        trading_sessions_ids = db.session.query(trading_session.session_id)\
+            .filter(
+            trading_session.username == username
+            )\
+            .all()
+        # TODO: ensure that a user only gets the trades related to themselves
+        trade_ = db.session.query(trade)\
+            .filter(
+                trade.trade_id == trade_id,
+                trade.trade_id.in_(trading_sessions_ids)
+            )\
+            .first()
+        if not trade_:
+            abort(404, 'trade not found')
+        return trade_.to_dict()
 
     @login_required(basic=True)
-    @ns.expect(todo)
-    @ns.marshal_with(todo)
-    def put(self, stock_name):
+    @trade_ns.expect(TRADE)
+    @trade_ns.marshal_with(TRADE)
+    def put(self, trade_id):
         """update a stock order for the currently logged in user"""
+        # TODO: implement
+        # TODO: testing
+        # username = get_username()
+        username = 'cgoud'
+        trading_sessions_ids = db.session.query(trading_session.session_id) \
+            .filter(
+            trading_session.username == username
+        ) \
+            .all()
+        # TODO: ensure that a user only gets the trades related to themselves
+        trade_ = db.session.query(trade) \
+            .filter(
+            trade.trade_id == trade_id,
+            trade.trade_id.in_(trading_sessions_ids)
+        ) \
+            .first()
+        # TODO: now we got the trade update it
+
+        # TODO: commit the trade update
+
+        # TODO: return updated trade
         return api.payload
