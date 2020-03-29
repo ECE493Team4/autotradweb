@@ -469,15 +469,12 @@ class TradeList(Resource):
 @trade_ns.route("/<int:trade_id>")
 @trade_ns.response(404, 'trade not found')
 class Trade(Resource):
-    # @login_required(basic=True) # TODO: testing
+    @login_required(basic=True)
     @trade_ns.doc('get_todo')
     @trade_ns.marshal_with(TRADE)
     def get(self, trade_id):
         """Get a trade orders for the currently logged in user"""
-        # get stock order id
-        # TODO: testing
-        # username = get_username()
-        username = 'cgoud'
+        username = get_username()
         trading_sessions_ids = db.session.query(trading_session.session_id)\
             .filter(
             trading_session.username == username
