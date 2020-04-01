@@ -79,6 +79,7 @@ setup(
         "flask",
         "flask-sqlalchemy",
         "flask-simplelogin",
+        "flask-restx",
         "dash",
         "dash-html-components",
         "dash-core-components",
