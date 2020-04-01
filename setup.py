@@ -85,6 +85,9 @@ setup(
         "dash-core-components",
         "dash-table",
     ],
+    extras_require={
+        "database": ["psycopg2-binary"],
+    },
     tests_require=[
         "pytest>=4.1.0,<5.0.0",
         "pytest-cov>=2.6.1,<3.0.0",
