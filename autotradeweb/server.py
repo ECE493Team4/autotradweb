@@ -105,6 +105,13 @@ class User(db.Model):
     password = db.Column(db.String(80), index=True, unique=True, nullable=False)
     bank = db.Column(db.Float(), default=0.0, nullable=False)
 
+    def to_dict(self):
+        return {
+            "id": int(self.id),
+            "username": str(self.username),
+            "bank": float(self.bank),
+        }
+
     def __repr__(self):
         return '<User {}>'.format(self.username)
 
@@ -527,3 +534,24 @@ class Trade(Resource):
             abort(404, 'trade not found')
         return trade_.to_dict()
 
+
+user_ns = api.namespace('users', description='user  operations')
+USER = api.model('user', {
+    'bank': fields.Float(required=True, default=0.0, description="The amount liquid cash assets"),
+    'username': fields.String(required=True, description="Name of the user"),
+})
+
+
+@user_ns.route("/")
+class APIUser(Resource):
+    @login_required(basic=True)
+    @user_ns.marshal_list_with(USER)
+    def get(self):
+        """Get the currently logged in user"""
+        username = get_username()
+        user_ = db.session.query(User) \
+            .filter(
+                User.username == username
+            ) \
+            .first()
+        return user_.to_dict()
