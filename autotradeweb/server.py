@@ -443,7 +443,7 @@ TRADE = api.model('trade', {
     'session_id': fields.Integer(required=False, description="id of the related stock trading session"),
     'trade_type': fields.String(required=True, description="type of trade (BUY|SELL)"),
     'price': fields.Float(required=True, description="name of the stock"),
-    'volume': fields.Integer(required=True, default=False),
+    'volume': fields.Integer(required=True),
     'time_stamp': fields.DateTime(),
 })
 
