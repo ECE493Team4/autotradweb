@@ -1,13 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" type="text/css" href="/static/stylesheet.css">
     <meta charset="UTF-8">
-    <title>My Account</title>
+    <title>Account</title>
 </head>
-<body>
-This is your account page
+<body style="background-color: rgb(60, 60, 60);height:100%;width:100%;">
+<div style="width:100%;height:100px;text-align:center">
+    <h1 style="color:white">Account</h2>
+</div>
+<div style="width:100%;height:400px;display:-webkit-flex">
+    <div style="width:25%;height:100%;display:-webkit-inline-flex">
+        <span></span>
+    </div>
+    <div style="width:50%;height:100%;background-color:rgb(220, 222, 220);border-radius:10px;border:2px solid rgb(0, 189, 12)">
+        <h2 style="text-align:center;text-decoration:underline;margin-bottom:30px;">Username</h3>
+        <div style="width:100%;margin:15px 200px">
+            <h3>Funds: XYZ</h3>
+        </div>
+        <div style="width:100%;margin:15px 200px">
+            <h3>Number trades: XYZ</h3>
+        </div>
+        <div style="width:100%;margin:15px 200px">
+            <h3>Active Sessions: XYZ</h3>
+        </div>
+        <div style="width:100%;margin:15px 200px">
+            <h3>Total Sessions: XYZ</h3>
+        </div>
+    </div>
+    <div style="width:25%;height:100%;display:-webkit-inline-flex">
+        <span></span>
+    </div>
+</div>
 <br>
-<a href="/logout">logout</a>
+<a href="/index" style="color:white;position:absolute;right:0;bottom:5;margin-right:20px">Index</a>
 <br>
 </body>
 </html>
