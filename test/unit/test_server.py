@@ -34,3 +34,18 @@ class TestBasicFlaskApp:
         resp = client.get(page)
         assert resp.status_code == 302
         assert "login" in resp.location
+
+
+@pytest.fixture(scope='module')
+def logged_in_client(client):
+    """init the autotradeweb flask app as a testing client"""
+    yield client
+
+
+class TestLoggedInBasicFlaskApp:
+    @pytest.mark.parametrize("page", ["/account", "/history", "/dashboard"])
+    def test_account_no_login(self, logged_in_client, page):
+        """test that browsing to the account page while logged in goes on
+        as intended"""
+        # TODO: implement
+        assert False
