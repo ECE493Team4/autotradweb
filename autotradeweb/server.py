@@ -17,6 +17,8 @@ from flask_simplelogin import SimpleLogin, login_required, get_username
 from flask_restx import Api, Resource, fields, abort
 from sqlalchemy import desc, func
 
+from sqlalchemy.dialects import postgresql
+
 
 __log__ = getLogger(__name__)
 
@@ -98,6 +100,12 @@ class stock_data(db.Model):
     close = db.Column(db.Float())
     volume = db.Column(db.Integer())
 
+
+class stock_prediciton(db.Model):
+    stock_name = db.Column(db.String(80), primary_key=True)
+    time_stamp = db.Column(db.DateTime(), primary_key=True)
+    prediction = db.Column(postgresql.ARRAY(db.Float()))
+    
 
 class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
@@ -243,16 +251,50 @@ def update_stock_timeline(start_date, end_date, stock_id):
                         )
                        .order_by(desc(stock_data.time_stamp))
                        .all())
+
+    try:
+        end_datetime = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S.%f")
+    except:
+        end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+
+    prediction_end_date = (end_datetime + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%f")
+    stock_predictions = list(db.session.query(stock_prediciton)
+                             .filter(
+                                stock_prediciton.stock_name == stock_id,
+                                func.date(stock_prediciton.time_stamp) >= start_date,
+                                func.date(stock_prediciton.time_stamp) <= prediction_end_date,
+                            ).order_by(desc(stock_prediciton.time_stamp))
+                             .all())
+
+    # TODO: cleanup
+    predictors = []
+    for stock_prediction_ in stock_predictions:
+        x = []
+        y = []
+        for hour, p in enumerate(stock_prediction_.prediction):
+            x.append(stock_prediction_.time_stamp + timedelta(hours=hour))
+            y.append(p)
+        # TODO: makes ugly rainbow garbage need to concentrate down
+        predictors.append(
+            {
+                'y': y,
+                'x': x,
+                'type': 'scatter',
+                'name': f'prediction from {stock_prediction_.time_stamp}',
+                'mode': 'lines'
+            }
+        )
+
     return {
         'data': [
             {
                 'y': [str(m.open) for m in stock_ticks],
                 'x': [m.time_stamp for m in stock_ticks],
                 'type': 'scatter',
-                'name': 'SF',
+                'name': 'actual values',
                 'mode': 'markers'
             },
-        ],
+        ] + predictors,
         'layout': {
             'title': 'Stock Value',
             'xaxis': {
