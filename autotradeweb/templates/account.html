@@ -6,6 +6,33 @@
     <title>Account</title>
 </head>
 <body style="background-color: rgb(60, 60, 60);height:100%;width:100%;">
+
+<script>
+var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      var status = xhr.status;
+      if (status === 200) {
+        callback(null, xhr.response);
+      } else {
+        callback(status, xhr.response);
+      }
+    };
+    xhr.send();
+};
+
+   getJSON('/user',
+function(err, data) {
+  if (err !== null) {
+    alert('Something went wrong: ' + err);
+  } else {
+    alert('Your bank count: ' + data.bank);
+  }
+});
+</script>
+
 <div style="width:100%;height:100px;text-align:center">
     <h1 style="color:white">Account</h2>
 </div>
