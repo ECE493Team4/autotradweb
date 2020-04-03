@@ -18,7 +18,7 @@ def client():
         yield c
 
 
-class TestCase:
+class BasicFlaskAppTests:
     def test_index(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
