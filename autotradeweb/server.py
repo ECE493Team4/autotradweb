@@ -535,7 +535,7 @@ class Trade(Resource):
         return trade_.to_dict()
 
 
-user_ns = api.namespace('users', description='user  operations')
+user_ns = api.namespace('user', description='user operations')
 USER = api.model('user', {
     'bank': fields.Float(required=True, default=0.0, description="The user's liquid cash assets"),
     'username': fields.String(required=True, description="Name of the user"),
