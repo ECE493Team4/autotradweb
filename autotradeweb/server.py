@@ -537,7 +537,7 @@ class Trade(Resource):
 
 user_ns = api.namespace('users', description='user  operations')
 USER = api.model('user', {
-    'bank': fields.Float(required=True, default=0.0, description="The amount liquid cash assets"),
+    'bank': fields.Float(required=True, default=0.0, description="The user's liquid cash assets"),
     'username': fields.String(required=True, description="Name of the user"),
 })
 
