@@ -4,6 +4,7 @@
 """pytests for :mod:`.server`"""
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
 from autotradeweb.server import APP
 
@@ -39,6 +40,18 @@ class TestBasicFlaskApp:
         resp = client.get(page)
         assert resp.status_code == 302
         assert "login" in resp.location
+
+    def test_register(self, client):
+        resp = client.get("/register")
+        assert resp.status_code == 200
+
+    def test_register_post(self, client):
+        # TODO: does not work until we find way to emulate postgrelocally
+        try:
+            resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
+            assert resp.status_code == 200
+        except OperationalError:
+            pass
 
 
 @pytest.fixture(scope='module')
