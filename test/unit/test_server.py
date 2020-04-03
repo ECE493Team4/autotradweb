@@ -19,8 +19,13 @@ def client():
 
 
 class TestBasicFlaskApp:
+
     def test_index(self, client):
         resp = client.get("/")
+        assert resp.status_code == 200
+
+    def test_register(self, client):
+        resp = client.get("/register")
         assert resp.status_code == 200
 
     def test_api(self, client):
