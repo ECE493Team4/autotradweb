@@ -12,6 +12,8 @@ from sqlalchemy.exc import OperationalError
 from autotradeweb.server import APP, User, db, trading_session, trade, stock_prediction, \
     stock_data
 
+# NOTE: to run these tests you must set a enviroment variable witht the database URI
+# of autotradeweb postgresql test database
 APP.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('TEST_DATABASE_URI')
 
 
