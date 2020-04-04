@@ -32,7 +32,6 @@ def get_parser() -> argparse.ArgumentParser:
                         help="Run the server in Flask debug mode")
     parser.add_argument("--database", default=DEFAULT_SQLITE_PATH,
                         help="Path to the SQLITE database to store messages")
-
     parser.add_argument("--disable-https", default=False, action="store_true",
                         dest="disable_https",
                         help="Disable HTTPS for swagger docs (useful for local debugging)")
