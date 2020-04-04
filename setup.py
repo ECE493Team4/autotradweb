@@ -92,6 +92,7 @@ setup(
         "pytest>=4.1.0,<5.0.0",
         "pytest-cov>=2.6.1,<3.0.0",
         "pylint>=2.2.2,<3.0.0",
+        "beautifulsoup4>=4.8.2,<5.0.0",
     ],
     entry_points={
         "console_scripts": [
