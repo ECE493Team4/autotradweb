@@ -124,7 +124,10 @@ class User(db.Model):
         return '<User {}>'.format(self.username)
 
 
-db.create_all()
+def init_db():
+    """helper function to intialize the database"""
+    db.create_all()
+
 
 ##################
 # main frontend

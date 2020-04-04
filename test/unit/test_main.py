@@ -8,8 +8,7 @@ import logging
 
 import pytest
 
-from autotradeweb.__main__ import get_parser, main
-from autotradeweb.common import log_level
+from autotradeweb.__main__ import get_parser, main, log_level
 
 
 def test_get_parser():
