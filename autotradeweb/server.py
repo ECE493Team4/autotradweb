@@ -75,8 +75,8 @@ class trading_session(db.Model):
     ticker = db.Column(db.String(80))
     start_time = db.Column(db.DateTime())
     end_time = db.Column(db.DateTime())
-    is_paused = db.Column(db.Boolean())
-    is_finished = db.Column(db.Boolean())
+    is_paused = db.Column(db.Boolean(), default=False)
+    is_finished = db.Column(db.Boolean(), default=False)
 
     # TODO: is best way to serialize to dict?
     def to_dict(self):
