@@ -11,16 +11,21 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-from flask import Flask, render_template, send_from_directory, request, redirect, \
-    url_for, abort, Response
+from flask import Flask, render_template, send_from_directory, request, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_simplelogin import SimpleLogin, login_required
-from sqlalchemy import func
+from flask_simplelogin import SimpleLogin, login_required, get_username
+from flask_restx import Api, Resource, fields, abort
+from sqlalchemy import desc, func
+
+from sqlalchemy.dialects import postgresql
 
 
 __log__ = getLogger(__name__)
 
+
 APP = Flask(__name__)
+
+
 DEFAULT_SQLITE_PATH = "sqlite:///autotradeweb.db"
 APP.config['SQLALCHEMY_DATABASE_URI'] = DEFAULT_SQLITE_PATH
 APP.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -45,30 +50,78 @@ def validate_login(user):
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
 
 
-class Stock(db.Model):
-    id = db.Column(db.String(80), primary_key=True)
-    symbol = db.Column(db.String(80))
-    name = db.Column(db.String(80), nullable=False)
-    value = db.Column(db.Float(), nullable=False)
-    datetime = db.Column(db.DateTime)
+class trade(db.Model):
+    trade_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
+    session_id = db.Column(db.Integer())
+    trade_type = db.Column(db.String(80))
+    price = db.Column(db.Float())
+    volume = db.Column(db.Integer())
+    time_stamp = db.Column(db.DateTime())
 
+    def to_dict(self):
+        return {
+            "trade_id": int(self.trade_id),
+            "session_id": int(self.session_id),
+            "price": float(self.price),
+            "volume": int(self.volume),
+            "trade_type": str(self.trade_type),
+            "time_stamp": self.time_stamp,
+        }
+
+
+class trading_session(db.Model):
+    session_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
+    username = db.Column(db.String(80))
+    ticker = db.Column(db.String(80))
+    start_time = db.Column(db.DateTime())
+    end_time = db.Column(db.DateTime())
+    is_paused = db.Column(db.Boolean())
+    is_finished = db.Column(db.Boolean())
+
+    # TODO: is best way to serialize to dict?
+    def to_dict(self):
+        return {
+            "session_id": int(self.session_id),
+            "username": str(self.username),
+            "ticker": str(self.ticker),
+            "is_paused": self.is_paused,
+            "is_finished": self.is_finished,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+        }
+
+
+class stock_data(db.Model):
+    stock_name = db.Column(db.String(80), primary_key=True)
+    time_stamp = db.Column(db.DateTime(), primary_key=True)
+    open = db.Column(db.Float())
+    high = db.Column(db.Float())
+    low = db.Column(db.Float())
+    close = db.Column(db.Float())
+    volume = db.Column(db.Integer())
+
+
+class stock_prediciton(db.Model):
+    stock_name = db.Column(db.String(80), primary_key=True)
+    time_stamp = db.Column(db.DateTime(), primary_key=True)
+    prediction = db.Column(postgresql.ARRAY(db.Float()))
+    
 
 class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), index=True, unique=True, nullable=False)
     password = db.Column(db.String(80), index=True, unique=True, nullable=False)
     bank = db.Column(db.Float(), default=0.0, nullable=False)
-    trades = db.relationship('StockTrade', backref='user', lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": int(self.id),
+            "username": str(self.username),
+            "bank": float(self.bank),
+        }
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
-
-
-class StockTrade(db.Model):
-    id = db.Column(db.String(80), primary_key=True)
-    bought_stock = db.Column(db.String(80), db.ForeignKey('stock.id'), nullable=False)
-    sold_stock = db.Column(db.String(80), db.ForeignKey('stock.id'), nullable=True)
-    owner = db.Column(db.String(80), db.ForeignKey("user.username"), nullable=False)
 
 
 db.create_all()
@@ -78,10 +131,8 @@ db.create_all()
 ##################
 
 
-
 @APP.route('/', methods=["GET"])
 def index():
-    # parse request arguments
     return render_template('index.html')
 
 
@@ -96,11 +147,10 @@ def register_submit():
     password = request.form.get('psw')
 
     new_user = User(username=username, password=password)
-    print(new_user)
+
     db.session.add(new_user)
     db.session.commit()
 
-    # TODO: notify usercreation redirect to login
     return redirect("/login")
 
 
@@ -119,26 +169,6 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets)
 
-
-slider_dates = {
-    0: "Year",
-    1: "Month",
-    2: "Day",
-    3: "Hour",
-    4: "Minute",
-    5: "Second"
-}
-
-date_bins = {
-    0: "%Y",
-    1: "%Y-%m",
-    2: "%Y-%m-%d",
-    3: "%Y-%m-%d-%H",
-    4: "%Y-%m-%d-%H:%M",
-    5: "%Y-%m-%d-%H:%M:%S"  # TODO: does not work very well should remove?
-}
-
-
 DASH.layout = html.Div(
     style={
         "overflow-x": "hidden"
@@ -150,14 +180,14 @@ DASH.layout = html.Div(
                 dcc.Dropdown(
                     id='stock-dropdown',
                     options=[{}],
-                    multi=True,
+                    multi=False,
                     placeholder="Select a Stock...",
                 ),
                 html.H3(children=["Date Range"]),
                 dcc.DatePickerRange(
                     id='date-picker-range',
                     end_date=datetime.utcnow(),
-                    start_date=datetime.utcnow() - timedelta(days=1)
+                    start_date=datetime.utcnow() - timedelta(days=30)
                 ),
             ],
             style={
@@ -189,23 +219,6 @@ DASH.layout = html.Div(
                         }
                     }
                 ),
-                html.Div(
-                    children=[
-                        html.H3(children=["Datetime Bin Size"]),
-                        dcc.Slider(
-                            id="date-binning-slider",
-                            min=0,
-                            max=5,
-                            marks=slider_dates,
-                            value=2,
-                        ),
-                    ],
-                    style={
-                        "margin-bottom": "2em",
-                        "padding-left": "2em",
-                        "padding-right": "2em"
-                    }
-                ),
             ]
         )
     ]
@@ -216,9 +229,9 @@ DASH.layout = html.Div(
                [Input('stock-dropdown', 'value')])
 @login_required
 def set_stock_timeline_options(v):
-    stocks = list(db.session.query(Stock.name, Stock.id))
+    stocks = set(db.session.query(stock_data.stock_name))
     if stocks:
-        return [{"label": "{} (id: {})".format(name, id), "value": id} for name, id in stocks]
+        return [{"label": str(stock.stock_name), "value": str(stock.stock_name)} for stock in stocks]
     return [{}]
 
 
@@ -227,26 +240,61 @@ def set_stock_timeline_options(v):
                     Input('date-picker-range', 'start_date'),
                     Input('date-picker-range', 'end_date'),
                     Input("stock-dropdown", 'value'),
-                    Input("date-binning-slider", "value")
                 ])
 @login_required
-def update_stock_timeline(start_date, end_date, stock_id, bin):
-    stock_ticks = list(db.session.query(func.count(Stock.id), Stock.datetime)
-                    .filter(
-                        func.date(Stock.datetime) >= start_date,
-                        func.date(Stock.datetime) <= end_date,
-                        Stock.id.in_(stock_id))
-                    .group_by(func.strftime(date_bins[bin], Stock.datetime)))
+def update_stock_timeline(start_date, end_date, stock_id):
+    stock_ticks = list(db.session.query(stock_data)
+                       .filter(
+                            stock_data.stock_name==stock_id,
+                            func.date(stock_data.time_stamp) >= start_date,
+                            func.date(stock_data.time_stamp) <= end_date,
+                        )
+                       .order_by(desc(stock_data.time_stamp))
+                       .all())
+
+    try:
+        end_datetime = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S.%f")
+    except:
+        end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+
+    prediction_end_date = (end_datetime + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%f")
+    stock_predictions = list(db.session.query(stock_prediciton)
+                             .filter(
+                                stock_prediciton.stock_name == stock_id,
+                                func.date(stock_prediciton.time_stamp) >= start_date,
+                                func.date(stock_prediciton.time_stamp) <= prediction_end_date,
+                            ).order_by(desc(stock_prediciton.time_stamp))
+                             .all())
+
+    # TODO: cleanup
+    predictors = []
+    for stock_prediction_ in stock_predictions:
+        x = []
+        y = []
+        for hour, p in enumerate(stock_prediction_.prediction):
+            x.append(stock_prediction_.time_stamp + timedelta(hours=hour))
+            y.append(p)
+        # TODO: makes ugly rainbow garbage need to concentrate down
+        predictors.append(
+            {
+                'y': y,
+                'x': x,
+                'type': 'scatter',
+                'name': f'prediction from {stock_prediction_.time_stamp}',
+                'mode': 'lines'
+            }
+        )
+
     return {
         'data': [
             {
-                'y': [str(m[0]) for m in stock_ticks],
-                'x': [m[1] for m in stock_ticks],
+                'y': [str(m.open) for m in stock_ticks],
+                'x': [m.time_stamp for m in stock_ticks],
                 'type': 'scatter',
-                'name': 'SF',
-                'mode': 'lines+markers'
+                'name': 'actual values',
+                'mode': 'markers'
             },
-        ],
+        ] + predictors,
         'layout': {
             'title': 'Stock Value',
             'xaxis': {
@@ -270,3 +318,282 @@ def stock_timeline():
     db.create_all()
     db.session.commit()
     return DASH.index()
+
+
+@APP.route("/account")
+@login_required
+def account():
+    return render_template("account.html")
+
+
+@APP.route("/history")
+@login_required
+def history():
+    return render_template("history.html")
+
+
+####################
+# API definitions
+####################
+
+api = Api(
+    APP,
+    version='0.0.0',
+    title='AutoTrade API',
+    doc="/api",
+    description='Official API for AutoTrade',
+)
+
+trading_sessions_ns = api.namespace('trades_sessions', description='trading session operations')
+
+TRADING_SESSION = api.model('trading_sessions', {
+    'session_id': fields.Integer(required=False, description="id of the trading session"),
+    'ticker': fields.String(required=True, description="name of the stock"),
+    'is_paused': fields.Boolean(required=True, default=False),
+    'is_finished': fields.Boolean(required=True, default=False),
+    'start_time': fields.DateTime(),
+    'end_time': fields.DateTime(),
+})
+
+
+@trading_sessions_ns.route("/")
+class TradingSessionList(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.doc('list all stock orders')
+    @trading_sessions_ns.marshal_list_with(TRADING_SESSION)
+    def get(self):
+        """Get the list of all trade sessions for the currently logged in user"""
+        username = get_username()
+        trading_sessions = db.session.query(trading_session)\
+            .filter(
+                trading_session.username == username
+            )\
+            .all()
+        return [trading_session_.to_dict() for trading_session_ in trading_sessions]
+
+    @login_required(basic=True)
+    @trading_sessions_ns.doc('create trading session')
+    @trading_sessions_ns.expect(TRADING_SESSION)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION, code=201)
+    def post(self):
+        """Add a trade session to the currently logged in user"""
+        new_trading_session = api.payload
+
+        # TODO: ensure ticker is valid
+        username = get_username()
+        new_trading_session_db = trading_session(
+            username=username,
+            start_time=new_trading_session["start_time"],
+            end_time=new_trading_session.get("end_time"),
+            ticker=new_trading_session["ticker"],
+            is_paused=new_trading_session["is_paused"],
+            is_finished=new_trading_session["is_finished"]
+        )
+        db.session.add(new_trading_session_db)
+        db.session.commit()
+        return new_trading_session_db.to_dict(), 201
+
+
+@trading_sessions_ns.route("/<int:session_id>")
+@trading_sessions_ns.response(404, 'trading session not found')
+class TradingSession(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.doc('get_todo')
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def get(self, session_id):
+        """Get a trade session for the currently logged in user"""''
+        username = get_username()
+        trading_session_ = db.session.query(trading_session)\
+            .filter(
+                trading_session.session_id == session_id,
+                trading_session.username == username
+            )\
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        return trading_session_.to_dict()
+
+
+@trading_sessions_ns.route("/<int:session_id>/pause")
+class TradingSessionPause(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def post(self, session_id):
+        """Pause a trading session"""
+        username = get_username()
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        trading_session_.is_paused = True
+        db.session.commit()
+        return trading_session_
+
+
+@trading_sessions_ns.route("/<int:session_id>/start")
+class TradingSessionResume(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def post(self, session_id):
+        """Restart/unpause a trading session"""
+        username = get_username()
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        trading_session_.is_paused = False
+        db.session.commit()
+        return trading_session_
+
+
+@trading_sessions_ns.route("/<int:session_id>/finish")
+class TradingSessionResume(Resource):
+    @login_required(basic=True)
+    @trading_sessions_ns.marshal_with(TRADING_SESSION)
+    def post(self, session_id):
+        """Finish a trading session
+
+        .. warning::
+            This action is irreversible
+        """
+        username = get_username()
+        trading_session_ = db.session.query(trading_session) \
+            .filter(
+            trading_session.session_id == session_id,
+            trading_session.username == username
+        ) \
+            .first()
+        if not trading_session_:
+            abort(404, 'trading session not found')
+        trading_session_.is_finished = True
+        db.session.commit()
+        return trading_session_
+
+
+trade_ns = api.namespace('trades', description='stock trade operations')
+
+TRADE = api.model('trade', {
+    'trade_id': fields.Integer(required=False, description="id of of the stock trade"),
+    'session_id': fields.Integer(required=False, description="id of the related stock trading session"),
+    'trade_type': fields.String(required=True, description="type of trade (BUY|SELL)"),
+    'price': fields.Float(required=True, description="name of the stock"),
+    'volume': fields.Integer(required=True),
+    'time_stamp': fields.DateTime(),
+})
+
+
+@trade_ns.route("/")
+class TradeList(Resource):
+    @login_required(basic=True)
+    @trade_ns.marshal_list_with(TRADE)
+    def get(self):
+        """Get the list of all stock trades for the currently logged in user"""
+        username = get_username()
+        trading_sessions_ids = db.session.query(trading_session.session_id) \
+            .filter(
+                trading_session.username == username
+            ) \
+            .all()
+        trades = db.session.query(trade)\
+            .filter(
+                trade.session_id.in_(trading_sessions_ids)
+            )\
+            .all()
+        return [trade_.to_dict() for trade_ in trades]
+
+    @login_required(basic=True)
+    @trade_ns.expect(TRADE)
+    @trade_ns.marshal_with(TRADE, code=201)
+    def post(self):
+        """Add a stock trade to the currently logged in user"""
+        new_trade = api.payload
+
+        # trade type is BUY or SELL
+        if new_trade["trade_type"] not in ["BUY", "SELL"]:
+            abort(400, "trade_type must be either BUY or SELL")
+
+        # ensure volume>1
+        if new_trade["volume"] < 1:
+            abort(400, "volume must be a integer equal to or greater than 1")
+
+        # ensure price>0
+        if new_trade["price"] <= 0:
+            abort(400, "price must be greater than 0")
+
+        # get the session id by the currently non_paused trading session
+        username = get_username()
+        trading_session_id = db.session.query(trading_session.session_id) \
+            .filter(
+                trading_session.username == username,
+                trading_session.session_id == new_trade["session_id"],
+                trading_session.is_finished == False,
+                trading_session.is_paused == False,
+            )\
+            .first()
+        if trading_session_id is None:
+            abort(404, "trading session not found")
+
+        new_trade_db = trade(
+            price=new_trade["price"],
+            trade_type=new_trade["trade_type"],
+            volume=new_trade["volume"],
+            session_id=new_trade["session_id"],
+            time_stamp=new_trade["time_stamp"]
+        )
+        db.session.add(new_trade_db)
+        db.session.commit()
+        return new_trade_db.to_dict(), 201
+
+
+@trade_ns.route("/<int:trade_id>")
+@trade_ns.response(404, 'trade not found')
+class Trade(Resource):
+    @login_required(basic=True)
+    @trade_ns.marshal_with(TRADE)
+    def get(self, trade_id):
+        """Get a stock trade for the currently logged in user"""
+        username = get_username()
+        trading_sessions_ids = db.session.query(trading_session.session_id)\
+            .filter(
+            trading_session.username == username
+            )\
+            .all()
+        trade_ = db.session.query(trade)\
+            .filter(
+                trade.trade_id == trade_id,
+                trade.trade_id.in_(trading_sessions_ids)
+            )\
+            .first()
+        if not trade_:
+            abort(404, 'trade not found')
+        return trade_.to_dict()
+
+
+user_ns = api.namespace('user', description='user operations')
+USER = api.model('user', {
+    'bank': fields.Float(required=True, default=0.0, description="The user's liquid cash assets"),
+    'username': fields.String(required=True, description="Name of the user"),
+})
+
+
+@user_ns.route("/")
+class APIUser(Resource):
+    @login_required(basic=True)
+    @user_ns.marshal_list_with(USER)
+    def get(self):
+        """Get the currently logged in user"""
+        username = get_username()
+        user_ = db.session.query(User) \
+            .filter(
+                User.username == username
+            ) \
+            .first()
+        return user_.to_dict()
