@@ -101,7 +101,7 @@ class stock_data(db.Model):
     volume = db.Column(db.Integer())
 
 
-class stock_prediciton(db.Model):
+class stock_prediction(db.Model):
     stock_name = db.Column(db.String(80), primary_key=True)
     time_stamp = db.Column(db.DateTime(), primary_key=True)
     prediction = db.Column(postgresql.ARRAY(db.Float()))
@@ -261,12 +261,12 @@ def update_stock_timeline(start_date, end_date, stock_id):
         end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
 
     prediction_end_date = (end_datetime + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%f")
-    stock_predictions = list(db.session.query(stock_prediciton)
+    stock_predictions = list(db.session.query(stock_prediction)
                              .filter(
-                                stock_prediciton.stock_name == stock_id,
-                                func.date(stock_prediciton.time_stamp) >= start_date,
-                                func.date(stock_prediciton.time_stamp) <= prediction_end_date,
-                            ).order_by(desc(stock_prediciton.time_stamp))
+        stock_prediction.stock_name == stock_id,
+        func.date(stock_prediction.time_stamp) >= start_date,
+        func.date(stock_prediction.time_stamp) <= prediction_end_date,
+                            ).order_by(desc(stock_prediction.time_stamp))
                              .all())
 
     # TODO: cleanup
