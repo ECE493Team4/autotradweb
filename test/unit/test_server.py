@@ -335,3 +335,13 @@ class TestDatabaseBindings:
         stock_data_ = db.session.query(stock_data).first()
         assert stock_data_
         assert stock_data_.stock_name
+
+
+# TODO: using selenium to instrumentation test the dash /dashboard
+# from dash.testing.application_runners import import_app
+#
+# @pytest.mark.xfail(reason="requires selenium install")
+# def test_one(dash_duo):
+#     app = import_app("autotradeweb.server.APP")
+#     dash_duo.start_server(app)
+#     dash_duo.wait_for_page(url="/dashboard", timeout=10)

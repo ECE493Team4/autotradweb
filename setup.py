@@ -93,6 +93,7 @@ setup(
         "pytest-cov>=2.6.1,<3.0.0",
         "pylint>=2.2.2,<3.0.0",
         "beautifulsoup4>=4.8.2,<5.0.0",
+        "dash[testing]",
     ],
     entry_points={
         "console_scripts": [
