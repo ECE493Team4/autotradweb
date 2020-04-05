@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""concord setup.py"""
+"""autotradeweb setup.py"""
 
 import codecs
 import os
@@ -32,7 +32,7 @@ class Pylint(test):
     def initialize_options(self):
         test.initialize_options(self)
         self.pylint_args = (
-            "concord --persistent=y --rcfile=.pylintrc --output-format=colorized"
+            "autotradeweb --persistent=y --rcfile=.pylintrc --output-format=colorized"
         )
 
     def run_tests(self):
@@ -49,7 +49,7 @@ class PyTest(test):
 
     def initialize_options(self):
         test.initialize_options(self)
-        self.pytest_args = "-v --cov={}".format("concord")
+        self.pytest_args = "-v --cov={}".format("autotradeweb")
 
     def run_tests(self):
         import shlex

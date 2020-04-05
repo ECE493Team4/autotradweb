@@ -112,7 +112,7 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=sys.argv[1:]) -> int:
-    """main entry point for the concord server"""
+    """main entry point for the autotradeweb server"""
     parser = get_parser()
     args = parser.parse_args(argv)
     init_logging(args, "autotradeweb.log")
