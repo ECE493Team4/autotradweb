@@ -9,7 +9,6 @@ from datetime import datetime
 
 import pytest
 from bs4 import BeautifulSoup
-from sqlalchemy.exc import OperationalError
 
 from autotradeweb.server import APP, User, db, trading_session, trade, \
     stock_prediction, \
