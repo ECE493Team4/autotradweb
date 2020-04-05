@@ -2,10 +2,14 @@
 autotradeweb
 ############
 
+.. image:: https://travis-ci.com/ECE493Team4/autotradweb.svg?branch=master
+    :target: https://travis-ci.com/ECE493Team4/autotradweb
+    :alt: Build Status
+
 Description
 ===========
 
-TODO: populate
+Front end web server for autotrader capstone project.
 
 Usage
 =====
