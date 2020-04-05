@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """pytests for :mod:`.server`"""
+
 import json
 import os
 from datetime import datetime
@@ -43,7 +44,6 @@ def client():
 
 
 class TestBasicFlaskApp:
-
     def test_index(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
@@ -139,8 +139,6 @@ def logged_in_client(client):
     assert resp.status_code == 200
     soup = BeautifulSoup(resp.data, 'html.parser')
     csrf_token = soup.find(id="csrf_token")["value"]
-
-    print(csrf_token)
     resp = client.post(
         "/login/",
         data=dict(
@@ -176,7 +174,7 @@ class TestLoggedInFlaskRestxApp:
         resp = logged_in_client.get("/trades_sessions/")
         assert resp.status_code == 200
         assert resp.is_json
-        assert resp.json
+        assert resp.json is not None
 
     def test_post_trades_session(self, logged_in_client):
         resp = logged_in_client.post(
@@ -212,6 +210,30 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
         assert resp.json["session_id"] == session_id
 
+    @pytest.mark.parametrize("url,is_paused,is_finished",
+                             [
+                                 ("/trades_sessions/{}/pause", True, False),
+                                 ("/trades_sessions/{}/finish", False, True),
+                                 ("/trades_sessions/{}/start", False, False)
+                             ])
+    def test_post_update_trade_session(self, logged_in_client, url, is_paused, is_finished):
+        resp = logged_in_client.post(
+            "/trades_sessions/",
+            data=json.dumps({
+                "ticker": "foobar",
+                "start_time": "2020-04-04T20:43:41.225Z",
+            }),
+            content_type='application/json'
+        )
+        assert resp.status_code == 201
+        assert resp.is_json
+        session_id = resp.json["session_id"]
+        resp = logged_in_client.post(url.format(session_id))
+        assert resp.status_code == 200
+        assert resp.is_json
+        assert resp.json["session_id"] == session_id
+        assert resp.json["is_finished"] == is_finished
+        assert resp.json["is_paused"] == is_paused
 
     def test_get_trades(self, logged_in_client):
         resp = logged_in_client.get("/trades/")
@@ -246,8 +268,6 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
         assert resp.json["trade_id"]
 
-        # TODO: cleanup
-
     def test_get_trade(self, logged_in_client):
         resp = logged_in_client.post(
             "/trades_sessions/",
@@ -275,15 +295,12 @@ class TestLoggedInFlaskRestxApp:
         assert resp.status_code == 201
         assert resp.is_json
         trade_id = resp.json["trade_id"]
-        print(trade_id)
         resp = logged_in_client.get(
             f"/trades/{trade_id}",
         )
         assert resp.status_code == 200
         assert resp.is_json
         assert resp.json["trade_id"] == trade_id
-
-        # TODO: cleanup
 
 
 class TestDatabaseBindings:
@@ -302,8 +319,6 @@ class TestDatabaseBindings:
         db.session.commit()
         assert trading_session_.session_id
         assert trading_session_.to_dict()
-        db.session.delete(trading_session_)
-        db.session.commit()
 
     def test_get_trade(self):
         trade_ = db.session.query(trade).first()
