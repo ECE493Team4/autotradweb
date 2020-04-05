@@ -20,6 +20,9 @@ after_success:
 
 jobs:
   include:
+# TODO: test database interacting tests will not work for travis as our test database requires ip whitelisting for access
+#    - python: 3.6
+#    - python: 3.7
     - stage: lint
       name: "black"
       python:
