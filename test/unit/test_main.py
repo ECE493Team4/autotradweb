@@ -8,8 +8,7 @@ import logging
 
 import pytest
 
-from autotradeweb.__main__ import get_parser, main
-from autotradeweb.common import log_level
+from autotradeweb.__main__ import get_parser, main, log_level
 
 
 def test_get_parser():
@@ -24,7 +23,7 @@ def test_get_parser():
         ("WARNING", logging.WARNING),
         ("ERROR", logging.ERROR),
         ("CRITICAL", logging.CRITICAL),
-    ]
+    ],
 )
 def test_log_level(log_level_string, expected):
     assert log_level(log_level_string) == expected
