@@ -27,13 +27,13 @@ APP = Flask(__name__)
 
 
 DEFAULT_SQLITE_PATH = "sqlite:///autotradeweb.db"
-APP.config['SQLALCHEMY_DATABASE_URI'] = DEFAULT_SQLITE_PATH
-APP.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+APP.config["SQLALCHEMY_DATABASE_URI"] = DEFAULT_SQLITE_PATH
+APP.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(APP)
 
 
 def validate_login(user):
-    db_user = User.query.filter_by(username=user['username']).first()
+    db_user = User.query.filter_by(username=user["username"]).first()
     if db_user is None:
         # no user of that username
         __log__.debug(f"login on nonexistant user: {user['username']}")
@@ -51,7 +51,9 @@ SL_APP = SimpleLogin(APP, login_checker=validate_login)
 
 
 class trade(db.Model):
-    trade_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
+    trade_id = db.Column(
+        db.Integer(), primary_key=True
+    )  # autoincrement defined by server
     session_id = db.Column(db.Integer())
     trade_type = db.Column(db.String(80))
     price = db.Column(db.Float())
@@ -70,7 +72,9 @@ class trade(db.Model):
 
 
 class trading_session(db.Model):
-    session_id = db.Column(db.Integer(), primary_key=True)  # autoincrement defined by server
+    session_id = db.Column(
+        db.Integer(), primary_key=True
+    )  # autoincrement defined by server
     username = db.Column(db.String(80))
     ticker = db.Column(db.String(80))
     start_time = db.Column(db.DateTime())
@@ -105,7 +109,7 @@ class stock_prediction(db.Model):
     stock_name = db.Column(db.String(80), primary_key=True)
     time_stamp = db.Column(db.DateTime(), primary_key=True)
     prediction = db.Column(postgresql.ARRAY(db.Float()))
-    
+
 
 class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
@@ -121,7 +125,7 @@ class User(db.Model):
         }
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return "<User {}>".format(self.username)
 
 
 def init_db():
@@ -134,20 +138,20 @@ def init_db():
 ##################
 
 
-@APP.route('/', methods=["GET"])
+@APP.route("/", methods=["GET"])
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
 
 @APP.route("/register", methods=["GET"])
 def register():
-    return render_template('register.html')
+    return render_template("register.html")
 
 
 @APP.route("/register", methods=["POST"])
 def register_submit():
-    username = request.form.get('email')
-    password = request.form.get('psw')
+    username = request.form.get("email")
+    password = request.form.get("psw")
 
     new_user = User(username=username, password=password)
 
@@ -157,9 +161,9 @@ def register_submit():
     return redirect("/login")
 
 
-@APP.route('/static/<path:path>')
+@APP.route("/static/<path:path>")
 def static_file(path):
-    static_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static')
+    static_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "static")
     return send_from_directory(static_folder, path)
 
 
@@ -168,106 +172,101 @@ def static_file(path):
 ##################
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets)
 
 DASH.layout = html.Div(
-    style={
-        "overflow-x": "hidden"
-    },
+    style={"overflow-x": "hidden"},
     children=[
         html.Div(
             children=[
                 html.H3(children=["Stock Value"]),
                 dcc.Dropdown(
-                    id='stock-dropdown',
+                    id="stock-dropdown",
                     options=[{}],
                     multi=False,
                     placeholder="Select a Stock...",
                 ),
                 html.H3(children=["Date Range"]),
                 dcc.DatePickerRange(
-                    id='date-picker-range',
+                    id="date-picker-range",
                     end_date=datetime.utcnow(),
-                    start_date=datetime.utcnow() - timedelta(days=30)
+                    start_date=datetime.utcnow() - timedelta(days=30),
                 ),
             ],
-            style={
-                "padding-left": "2em",
-                "padding-right": "2em"
-            }
+            style={"padding-left": "2em", "padding-right": "2em"},
         ),
         html.Div(
             children=[
                 dcc.Graph(
-                    id='stock-value-timeline-graph',
+                    id="stock-value-timeline-graph",
                     figure={
-                        'data': [
-                            {
-                                'y': [],
-                                'x': [],
-                                'type': 'scatter',
-                                'name': 'SF'
-                            },
-                        ],
-                        'layout': {
-                            'title': 'Stock Value',
-                            'xaxis': {
-                                'title': 'Datetime'
-                            },
-                            'yaxis': {
-                                'title': 'Stock Value'
-                            }
-                        }
-                    }
+                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"},],
+                        "layout": {
+                            "title": "Stock Value",
+                            "xaxis": {"title": "Datetime"},
+                            "yaxis": {"title": "Stock Value"},
+                        },
+                    },
                 ),
             ]
-        )
-    ]
+        ),
+    ],
 )
 
 
-@DASH.callback(Output('stock-dropdown', 'options'),
-               [Input('stock-dropdown', 'value')])
+@DASH.callback(Output("stock-dropdown", "options"), [Input("stock-dropdown", "value")])
 @login_required
 def set_stock_timeline_options(v):
     stocks = set(db.session.query(stock_data.stock_name))
     if stocks:
-        return [{"label": str(stock.stock_name), "value": str(stock.stock_name)} for stock in stocks]
+        return [
+            {"label": str(stock.stock_name), "value": str(stock.stock_name)}
+            for stock in stocks
+        ]
     return [{}]
 
 
-@DASH.callback(Output('stock-value-timeline-graph', 'figure'),
-               [
-                    Input('date-picker-range', 'start_date'),
-                    Input('date-picker-range', 'end_date'),
-                    Input("stock-dropdown", 'value'),
-                ])
+@DASH.callback(
+    Output("stock-value-timeline-graph", "figure"),
+    [
+        Input("date-picker-range", "start_date"),
+        Input("date-picker-range", "end_date"),
+        Input("stock-dropdown", "value"),
+    ],
+)
 @login_required
 def update_stock_timeline(start_date, end_date, stock_id):
-    stock_ticks = list(db.session.query(stock_data)
-                       .filter(
-                            stock_data.stock_name==stock_id,
-                            func.date(stock_data.time_stamp) >= start_date,
-                            func.date(stock_data.time_stamp) <= end_date,
-                        )
-                       .order_by(desc(stock_data.time_stamp))
-                       .all())
+    stock_ticks = list(
+        db.session.query(stock_data)
+        .filter(
+            stock_data.stock_name == stock_id,
+            func.date(stock_data.time_stamp) >= start_date,
+            func.date(stock_data.time_stamp) <= end_date,
+        )
+        .order_by(desc(stock_data.time_stamp))
+        .all()
+    )
 
     try:
         end_datetime = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S.%f")
     except:
         end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
 
-    prediction_end_date = (end_datetime + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%f")
-    stock_predictions = list(db.session.query(stock_prediction)
-                             .filter(
-        stock_prediction.stock_name == stock_id,
-        func.date(stock_prediction.time_stamp) >= start_date,
-        func.date(stock_prediction.time_stamp) <= prediction_end_date,
-                            ).order_by(desc(stock_prediction.time_stamp))
-                             .all())
+    prediction_end_date = (end_datetime + timedelta(days=2)).strftime(
+        "%Y-%m-%dT%H:%M:%S.%f"
+    )
+    stock_predictions = list(
+        db.session.query(stock_prediction)
+        .filter(
+            stock_prediction.stock_name == stock_id,
+            func.date(stock_prediction.time_stamp) >= start_date,
+            func.date(stock_prediction.time_stamp) <= prediction_end_date,
+        )
+        .order_by(desc(stock_prediction.time_stamp))
+        .all()
+    )
 
     # TODO: cleanup
     predictors = []
@@ -280,33 +279,30 @@ def update_stock_timeline(start_date, end_date, stock_id):
         # TODO: makes ugly rainbow garbage need to concentrate down
         predictors.append(
             {
-                'y': y,
-                'x': x,
-                'type': 'scatter',
-                'name': f'prediction from {stock_prediction_.time_stamp}',
-                'mode': 'lines'
+                "y": y,
+                "x": x,
+                "type": "scatter",
+                "name": f"prediction from {stock_prediction_.time_stamp}",
+                "mode": "lines",
             }
         )
 
     return {
-        'data': [
+        "data": [
             {
-                'y': [str(m.open) for m in stock_ticks],
-                'x': [m.time_stamp for m in stock_ticks],
-                'type': 'scatter',
-                'name': 'actual values',
-                'mode': 'markers'
+                "y": [str(m.open) for m in stock_ticks],
+                "x": [m.time_stamp for m in stock_ticks],
+                "type": "scatter",
+                "name": "actual values",
+                "mode": "markers",
             },
-        ] + predictors,
-        'layout': {
-            'title': 'Stock Value',
-            'xaxis': {
-                'title': 'Datetime'
-            },
-            'yaxis': {
-                'title': 'Stock Value'
-            }
-        }
+        ]
+        + predictors,
+        "layout": {
+            "title": "Stock Value",
+            "xaxis": {"title": "Datetime"},
+            "yaxis": {"title": "Stock Value"},
+        },
     }
 
 
@@ -315,7 +311,7 @@ DASH.css.config.serve_locally = True
 DASH.scripts.config.serve_locally = True
 
 
-@APP.route('/dashboard', methods=['GET', 'POST'])
+@APP.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def stock_timeline():
     db.create_all()
@@ -341,37 +337,44 @@ def history():
 
 api = Api(
     APP,
-    version='0.0.0',
-    title='AutoTrade API',
+    version="0.0.0",
+    title="AutoTrade API",
     doc="/api",
-    description='Official API for AutoTrade',
+    description="Official API for AutoTrade",
 )
 
-trading_sessions_ns = api.namespace('trades_sessions', description='trading session operations')
+trading_sessions_ns = api.namespace(
+    "trades_sessions", description="trading session operations"
+)
 
-TRADING_SESSION = api.model('trading_sessions', {
-    'session_id': fields.Integer(required=False, description="id of the trading session"),
-    'ticker': fields.String(required=True, description="name of the stock"),
-    'is_paused': fields.Boolean(default=False),
-    'is_finished': fields.Boolean(default=False),
-    'start_time': fields.DateTime(),
-    'end_time': fields.DateTime(),
-})
+TRADING_SESSION = api.model(
+    "trading_sessions",
+    {
+        "session_id": fields.Integer(
+            required=False, description="id of the trading session"
+        ),
+        "ticker": fields.String(required=True, description="name of the stock"),
+        "is_paused": fields.Boolean(default=False),
+        "is_finished": fields.Boolean(default=False),
+        "start_time": fields.DateTime(),
+        "end_time": fields.DateTime(),
+    },
+)
 
 
 @trading_sessions_ns.route("/")
 class TradingSessionList(Resource):
     @login_required(basic=True)
-    @trading_sessions_ns.doc('list all stock orders')
+    @trading_sessions_ns.doc("list all stock orders")
     @trading_sessions_ns.marshal_list_with(TRADING_SESSION)
     def get(self):
         """Get the list of all trade sessions for the currently logged in user"""
         username = get_username()
-        trading_sessions = db.session.query(trading_session)\
-            .filter(
-                trading_session.username == username
-            )\
+        trading_sessions = (
+            db.session.query(trading_session)
+            .filter(trading_session.username == username)
             .all()
+        )
         return [trading_session_.to_dict() for trading_session_ in trading_sessions]
 
     # TODO: using basic here makes unit test fails (maybe this is a issue with flask-restx?)
@@ -390,7 +393,7 @@ class TradingSessionList(Resource):
             end_time=new_trading_session.get("end_time"),
             ticker=new_trading_session["ticker"],
             is_paused=new_trading_session.get("is_paused", False),
-            is_finished=new_trading_session.get("is_finished", False)
+            is_finished=new_trading_session.get("is_finished", False),
         )
         db.session.add(new_trading_session_db)
         db.session.commit()
@@ -398,22 +401,24 @@ class TradingSessionList(Resource):
 
 
 @trading_sessions_ns.route("/<int:session_id>")
-@trading_sessions_ns.response(404, 'trading session not found')
+@trading_sessions_ns.response(404, "trading session not found")
 class TradingSession(Resource):
     @login_required(basic=True)
-    @trading_sessions_ns.doc('get_todo')
+    @trading_sessions_ns.doc("get_todo")
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
     def get(self, session_id):
-        """Get a trade session for the currently logged in user"""''
+        """Get a trade session for the currently logged in user""" ""
         username = get_username()
-        trading_session_ = db.session.query(trading_session)\
+        trading_session_ = (
+            db.session.query(trading_session)
             .filter(
                 trading_session.session_id == session_id,
-                trading_session.username == username
-            )\
+                trading_session.username == username,
+            )
             .first()
+        )
         if not trading_session_:
-            abort(404, 'trading session not found')
+            abort(404, "trading session not found")
         return trading_session_.to_dict()
 
 
@@ -424,14 +429,16 @@ class TradingSessionPause(Resource):
     def post(self, session_id):
         """Pause a trading session"""
         username = get_username()
-        trading_session_ = db.session.query(trading_session) \
+        trading_session_ = (
+            db.session.query(trading_session)
             .filter(
-            trading_session.session_id == session_id,
-            trading_session.username == username
-        ) \
+                trading_session.session_id == session_id,
+                trading_session.username == username,
+            )
             .first()
+        )
         if not trading_session_:
-            abort(404, 'trading session not found')
+            abort(404, "trading session not found")
         trading_session_.is_paused = True
         db.session.commit()
         return trading_session_.to_dict()
@@ -444,14 +451,16 @@ class TradingSessionStart(Resource):
     def post(self, session_id):
         """Restart/unpause a trading session"""
         username = get_username()
-        trading_session_ = db.session.query(trading_session) \
+        trading_session_ = (
+            db.session.query(trading_session)
             .filter(
-            trading_session.session_id == session_id,
-            trading_session.username == username
-        ) \
+                trading_session.session_id == session_id,
+                trading_session.username == username,
+            )
             .first()
+        )
         if not trading_session_:
-            abort(404, 'trading session not found')
+            abort(404, "trading session not found")
         trading_session_.is_paused = False
         db.session.commit()
         return trading_session_.to_dict()
@@ -468,29 +477,40 @@ class TradingSessionFinish(Resource):
             This action is irreversible
         """
         username = get_username()
-        trading_session_ = db.session.query(trading_session) \
+        trading_session_ = (
+            db.session.query(trading_session)
             .filter(
-            trading_session.session_id == session_id,
-            trading_session.username == username
-        ) \
+                trading_session.session_id == session_id,
+                trading_session.username == username,
+            )
             .first()
+        )
         if not trading_session_:
-            abort(404, 'trading session not found')
+            abort(404, "trading session not found")
         trading_session_.is_finished = True
         db.session.commit()
         return trading_session_.to_dict()
 
 
-trade_ns = api.namespace('trades', description='stock trade operations')
+trade_ns = api.namespace("trades", description="stock trade operations")
 
-TRADE = api.model('trade', {
-    'trade_id': fields.Integer(required=False, description="id of of the stock trade"),
-    'session_id': fields.Integer(required=True, description="id of the related stock trading session"),
-    'trade_type': fields.String(required=True, description="type of trade (BUY|SELL)"),
-    'price': fields.Float(required=True, description="name of the stock"),
-    'volume': fields.Integer(required=True),
-    'time_stamp': fields.DateTime(),
-})
+TRADE = api.model(
+    "trade",
+    {
+        "trade_id": fields.Integer(
+            required=False, description="id of of the stock trade"
+        ),
+        "session_id": fields.Integer(
+            required=True, description="id of the related stock trading session"
+        ),
+        "trade_type": fields.String(
+            required=True, description="type of trade (BUY|SELL)"
+        ),
+        "price": fields.Float(required=True, description="name of the stock"),
+        "volume": fields.Integer(required=True),
+        "time_stamp": fields.DateTime(),
+    },
+)
 
 
 @trade_ns.route("/")
@@ -500,16 +520,16 @@ class TradeList(Resource):
     def get(self):
         """Get the list of all stock trades for the currently logged in user"""
         username = get_username()
-        trading_sessions_ids = db.session.query(trading_session.session_id) \
-            .filter(
-                trading_session.username == username
-            ) \
+        trading_sessions_ids = (
+            db.session.query(trading_session.session_id)
+            .filter(trading_session.username == username)
             .all()
-        trades = db.session.query(trade)\
-            .filter(
-                trade.session_id.in_(trading_sessions_ids)
-            )\
+        )
+        trades = (
+            db.session.query(trade)
+            .filter(trade.session_id.in_(trading_sessions_ids))
             .all()
+        )
         return [trade_.to_dict() for trade_ in trades]
 
     # TODO: using basic here makes unit test fails (maybe this is a issue with flask-restx?)
@@ -534,14 +554,16 @@ class TradeList(Resource):
 
         # get the session id by the currently non_paused trading session
         username = get_username()
-        trading_session_id = db.session.query(trading_session.session_id) \
+        trading_session_id = (
+            db.session.query(trading_session.session_id)
             .filter(
                 trading_session.username == username,
                 trading_session.session_id == new_trade["session_id"],
                 trading_session.is_finished == False,
                 trading_session.is_paused == False,
-            )\
+            )
             .first()
+        )
         if trading_session_id is None:
             abort(404, "trading session not found")
 
@@ -550,7 +572,7 @@ class TradeList(Resource):
             trade_type=new_trade["trade_type"],
             volume=new_trade["volume"],
             session_id=new_trade["session_id"],
-            time_stamp=new_trade["time_stamp"]
+            time_stamp=new_trade["time_stamp"],
         )
         db.session.add(new_trade_db)
         db.session.commit()
@@ -565,29 +587,35 @@ class Trade(Resource):
     def get(self, trade_id):
         """Get a stock trade for the currently logged in user"""
         username = get_username()
-        trading_sessions_ids = db.session.query(trading_session.session_id)\
-            .filter(
-                trading_session.username == username
-            )\
+        trading_sessions_ids = (
+            db.session.query(trading_session.session_id)
+            .filter(trading_session.username == username)
             .all()
+        )
         if not trading_sessions_ids:
-            abort(404, 'no trading sessions for user')
-        trade_ = db.session.query(trade)\
+            abort(404, "no trading sessions for user")
+        trade_ = (
+            db.session.query(trade)
             .filter(
-                trade.trade_id == trade_id,
-                trade.session_id.in_(trading_sessions_ids)
-            )\
+                trade.trade_id == trade_id, trade.session_id.in_(trading_sessions_ids)
+            )
             .first()
+        )
         if not trade_:
-            abort(404, 'trade not found')
+            abort(404, "trade not found")
         return trade_.to_dict()
 
 
-user_ns = api.namespace('user', description='user operations')
-USER = api.model('user', {
-    'bank': fields.Float(required=True, default=0.0, description="The user's liquid cash assets"),
-    'username': fields.String(required=True, description="Name of the user"),
-})
+user_ns = api.namespace("user", description="user operations")
+USER = api.model(
+    "user",
+    {
+        "bank": fields.Float(
+            required=True, default=0.0, description="The user's liquid cash assets"
+        ),
+        "username": fields.String(required=True, description="Name of the user"),
+    },
+)
 
 
 @user_ns.route("/")
@@ -597,9 +625,5 @@ class APIUser(Resource):
     def get(self):
         """Get the currently logged in user"""
         username = get_username()
-        user_ = db.session.query(User) \
-            .filter(
-                User.username == username
-            ) \
-            .first()
+        user_ = db.session.query(User).filter(User.username == username).first()
         return user_.to_dict()

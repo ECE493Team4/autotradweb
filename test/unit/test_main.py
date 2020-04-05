@@ -23,7 +23,7 @@ def test_get_parser():
         ("WARNING", logging.WARNING),
         ("ERROR", logging.ERROR),
         ("CRITICAL", logging.CRITICAL),
-    ]
+    ],
 )
 def test_log_level(log_level_string, expected):
     assert log_level(log_level_string) == expected

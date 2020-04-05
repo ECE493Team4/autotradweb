@@ -26,8 +26,7 @@ def log_level(log_level_string: str):
     if log_level_string not in LOG_LEVEL_STRINGS:
         raise argparse.ArgumentTypeError(
             "invalid choice: {} (choose from {})".format(
-                log_level_string,
-                LOG_LEVEL_STRINGS
+                log_level_string, LOG_LEVEL_STRINGS
             )
         )
     return getattr(logging, log_level_string, logging.INFO)
@@ -36,13 +35,21 @@ def log_level(log_level_string: str):
 def add_log_parser(parser):
     """Add logging options to the argument parser"""
     group = parser.add_argument_group(title="Logging")
-    group.add_argument("--log-level", dest="log_level", default="INFO",
-                       type=log_level, help="Set the logging output level")
-    group.add_argument("--log-dir", dest="log_dir",
-                       help="Enable TimeRotatingLogging at the directory "
-                            "specified")
-    group.add_argument("-v", "--verbose", action="store_true",
-                       help="Enable verbose logging")
+    group.add_argument(
+        "--log-level",
+        dest="log_level",
+        default="INFO",
+        type=log_level,
+        help="Set the logging output level",
+    )
+    group.add_argument(
+        "--log-dir",
+        dest="log_dir",
+        help="Enable TimeRotatingLogging at the directory " "specified",
+    )
+    group.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose logging"
+    )
 
 
 def init_logging(args, log_file_path):
@@ -54,7 +61,10 @@ def init_logging(args, log_file_path):
         os.makedirs(args.log_dir, exist_ok=True)
         file_handler = TimedRotatingFileHandler(
             os.path.join(args.log_dir, log_file_path),
-            when="d", interval=1, backupCount=7, encoding="UTF-8",
+            when="d",
+            interval=1,
+            backupCount=7,
+            encoding="UTF-8",
         )
         file_handler.setFormatter(log_format)
         file_handler.setLevel(args.log_level)
@@ -65,10 +75,7 @@ def init_logging(args, log_file_path):
         stream_handler.setLevel(args.log_level)
         handlers_.append(stream_handler)
 
-    logging.basicConfig(
-        handlers=handlers_,
-        level=args.log_level
-    )
+    logging.basicConfig(handlers=handlers_, level=args.log_level)
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -78,17 +85,27 @@ def get_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument("-d", "--host", default='localhost',
-                        help="Hostname to listen on")
-    parser.add_argument("-p", "--port", default=8080, type=int,
-                        help="Port of the webserver")
-    parser.add_argument("--debug", action="store_true",
-                        help="Run the server in Flask debug mode")
-    parser.add_argument("--database", default=DEFAULT_SQLITE_PATH,
-                        help="Path to the SQLITE database to store messages")
-    parser.add_argument("--disable-https", default=False, action="store_true",
-                        dest="disable_https",
-                        help="Disable HTTPS for swagger docs (useful for local debugging)")
+    parser.add_argument(
+        "-d", "--host", default="localhost", help="Hostname to listen on"
+    )
+    parser.add_argument(
+        "-p", "--port", default=8080, type=int, help="Port of the webserver"
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="Run the server in Flask debug mode"
+    )
+    parser.add_argument(
+        "--database",
+        default=DEFAULT_SQLITE_PATH,
+        help="Path to the SQLITE database to store messages",
+    )
+    parser.add_argument(
+        "--disable-https",
+        default=False,
+        action="store_true",
+        dest="disable_https",
+        help="Disable HTTPS for swagger docs (useful for local debugging)",
+    )
     add_log_parser(parser)
 
     return parser
@@ -104,23 +121,20 @@ def main(argv=sys.argv[1:]) -> int:
     # https://github.com/noirbizarre/flask-restplus/issues/54
     # so that /swagger.json is served over https
     if not args.disable_https:
+
         @property
         def specs_url(self):
             """Monkey patch for HTTPS"""
-            return url_for(self.endpoint('specs'), _external=True,
-                           _scheme='https')
+            return url_for(self.endpoint("specs"), _external=True, _scheme="https")
+
         Api.specs_url = specs_url
 
     __log__.info("starting server: host: {} port: {}".format(args.host, args.port))
-    APP.config['SQLALCHEMY_DATABASE_URI'] = args.database
+    APP.config["SQLALCHEMY_DATABASE_URI"] = args.database
     if args.debug:
-        APP.run(
-            host=args.host,
-            port=args.port,
-            debug=True
-        )
+        APP.run(host=args.host, port=args.port, debug=True)
     else:
-        path_info_dispatcher = PathInfoDispatcher({'/': APP})
+        path_info_dispatcher = PathInfoDispatcher({"/": APP})
         server = WSGIServer((args.host, args.port), path_info_dispatcher)
         try:
             server.start()
