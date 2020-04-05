@@ -18,6 +18,20 @@ from autotradeweb.server import APP, User, db, trading_session, trade, stock_pre
 APP.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('TEST_DATABASE_URI')
 
 
+def clear_user_related_db_entities():
+    db.session.query(trade).delete()
+    db.session.query(trading_session).delete()
+    db.session.query(User).delete()
+    db.session.commit()
+
+
+def teardown_module(module):
+    """ teardown any state that was previously setup with a setup_module
+    method.
+    """
+    clear_user_related_db_entities()
+
+
 @pytest.fixture(scope='module')
 def client():
     """init the autotradeweb flask app as a testing client"""
