@@ -337,7 +337,7 @@ class TestDatabaseBindings:
         assert stock_data_.stock_name
 
 
-# TODO: using selenium to instrumentation test the dash /dashboard
+# TODO: using selenium to instrumentation test the dash "/dashboard" endpoint
 # from dash.testing.application_runners import import_app
 #
 # @pytest.mark.xfail(reason="requires selenium install")
