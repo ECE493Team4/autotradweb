@@ -77,6 +77,7 @@ class TestBasicFlaskApp:
 
     def test_login_post(self, client):
         """register a user and attempt a login"""
+        # setup empty the user table
         db.session.query(User).delete()
         db.session.commit()
 
