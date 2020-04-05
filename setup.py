@@ -73,7 +73,7 @@ setup(
     long_description=readme(),
     author="Nathan Klapstein",
     author_email="nklapste@ualberta.ca",
-    url="https://github.com/nklapste/autotradeweb",
+    url="https://github.com/ECE493Team4/autotradweb",
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",
