@@ -94,6 +94,7 @@ setup(
         "dash-core-components>=1.8.1,<2.0.0",
         "dash-table>=4.6.1,<5.0.0",
         "psycopg2-binary>=2.8.4,<3.0.0",
+        "graypy>=2.1.0,<3.0.0",
     ],
     tests_require=[
         "pytest>=4.1.0,<5.0.0",
