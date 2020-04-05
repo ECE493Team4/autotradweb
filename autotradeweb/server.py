@@ -576,7 +576,7 @@ class Trade(Resource):
         trade_ = db.session.query(trade)\
             .filter(
                 trade.trade_id == trade_id,
-                trade.trade_id.in_(trading_sessions_ids)
+                trade.session_id.in_(trading_sessions_ids)
             )\
             .first()
         if not trade_:
