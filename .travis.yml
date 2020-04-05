@@ -1,0 +1,75 @@
+language: python
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+before_install:
+  - pip install codecov
+
+install:
+  - pip install .
+
+script:
+  - python setup.py test
+
+after_success:
+  - codecov
+
+jobs:
+  include:
+    - stage: lint
+      name: "black"
+      python:
+        - 3.6
+      before_install:
+        - pip install black
+      before_script: skip
+      script:
+        - black --check setup.py test autotradeweb
+      after_script: skip
+    - name: "pylint"
+      python:
+        - 3.6
+      before_script: skip
+      script:
+        - python setup.py lint || exit $(($? & 35))
+      after_script: skip
+    - name: "twine check"
+      python:
+        - 3.6
+      before_install:
+        - pip install docutils twine
+      before_script:
+        - python setup.py sdist
+      script:
+        - twine check dist/*
+      after_script: skip
+    - stage: build
+      name: "sdist"
+      python:
+        - 3.6
+      before_script: skip
+      script:
+        - python setup.py sdist
+      after_script: skip
+    - name: "bdist_wheel"
+      python:
+        - 3.6
+      install:
+        - pip install . wheel
+      before_script: skip
+      script:
+        - python setup.py bdist_wheel
+      after_script: skip
+#    - name: "sphinx docs"
+#      python:
+#        - 3.6
+#      install:
+#        - pip install .[docs,amqp]
+#      before_script: skip
+#      script:
+#        - sphinx-build docs/ build/
+#      after_script: skip
