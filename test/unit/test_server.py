@@ -11,8 +11,7 @@ import pytest
 from bs4 import BeautifulSoup
 
 from autotradeweb.server import APP, User, db, trading_session, trade, \
-    stock_prediction, \
-    stock_data
+    stock_prediction, stock_data
 
 # NOTE: to run these tests you must set a enviroment variable witht the database URI
 # of autotradeweb postgresql test database
@@ -20,6 +19,7 @@ APP.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('TEST_DATABASE_URI')
 
 
 def clear_user_related_db_entities():
+    """delete all user related test database entities."""
     db.session.query(trade).delete()
     db.session.query(trading_session).delete()
     db.session.query(User).delete()
@@ -27,9 +27,7 @@ def clear_user_related_db_entities():
 
 
 def teardown_module(module):
-    """ teardown any state that was previously setup with a setup_module
-    method.
-    """
+    """delete all user related test database entities on test module exit"""
     clear_user_related_db_entities()
 
 
@@ -44,29 +42,22 @@ def client():
 
 
 class TestBasicFlaskApp:
-    def test_index(self, client):
-        resp = client.get("/")
+    @pytest.mark.parametrize("page", ["/", "/api", "/register", "/login/"])
+    def test_page_no_login_access(self, client, page):
+        resp = client.get(page)
         assert resp.status_code == 200
 
-    def test_register(self, client):
-        resp = client.get("/register")
-        assert resp.status_code == 200
-
-    def test_api(self, client):
-        resp = client.get("/api")
-        assert resp.status_code == 200
+    def test_logout(self, client):
+        resp = client.get("/logout/")
+        assert resp.status_code == 302
 
     @pytest.mark.parametrize("page", ["/account", "/history", "/dashboard"])
-    def test_page_no_login(self, client, page):
+    def test_page_no_login_no_access(self, client, page):
         """test that browsing to the account page while logged out
         redirects the user to the login page"""
         resp = client.get(page)
         assert resp.status_code == 302
         assert "login" in resp.location
-
-    def test_register(self, client):
-        resp = client.get("/register")
-        assert resp.status_code == 200
 
     def test_register_post(self, client):
         # TODO: does not work until we find way to emulate postgrelocally
@@ -77,7 +68,7 @@ class TestBasicFlaskApp:
         assert resp.status_code == 302
         assert "login" in resp.location
 
-    def test_login(self, client):
+    def test_login_post(self, client):
         """register a user and attempt a login"""
         db.session.query(User).delete()
         db.session.commit()
@@ -146,7 +137,7 @@ class TestLoggedInBasicFlaskApp:
 
 
 def create_trade_session(logged_in_client):
-    """test helper function to create a trade session via the API"""
+    """test helper to create a trade session via the API"""
     resp = logged_in_client.post(
         "/trades_sessions/",
         data=json.dumps({
@@ -161,8 +152,7 @@ def create_trade_session(logged_in_client):
 
 
 def create_trade(logged_in_client):
-    """test helper function to create a trade via the API and a provided
-    session id"""
+    """test helper to create a trade via the API"""
     session = create_trade_session(logged_in_client)
     resp = logged_in_client.post(
         "/trades/",
