@@ -8,10 +8,11 @@ import os
 from datetime import datetime
 
 import pytest
-from sqlalchemy.exc import OperationalError
 from bs4 import BeautifulSoup
+from sqlalchemy.exc import OperationalError
 
-from autotradeweb.server import APP, User, db, trading_session, trade, stock_prediction, \
+from autotradeweb.server import APP, User, db, trading_session, trade, \
+    stock_prediction, \
     stock_data
 
 # NOTE: to run these tests you must set a enviroment variable witht the database URI
@@ -73,33 +74,23 @@ class TestBasicFlaskApp:
         # setup empty the user table
         db.session.query(User).delete()
         db.session.commit()
-
-        try:
-            resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
-            assert resp.status_code == 302
-            assert "login" in resp.location
-        except OperationalError:
-            pass
+        resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
+        assert resp.status_code == 302
+        assert "login" in resp.location
 
     def test_login(self, client):
         """register a user and attempt a login"""
-        # setup empty the user table
         db.session.query(User).delete()
         db.session.commit()
 
-        try:
-            resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
-            assert resp.status_code == 302
-            assert "login" in resp.location
-        except OperationalError:
-            pass
+        resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
+        assert resp.status_code == 302
+        assert "login" in resp.location
 
         resp = client.get("/login/")
-        print(resp.location)
         soup = BeautifulSoup(resp.data, 'html.parser')
         csrf_token = soup.find(id="csrf_token")["value"]
 
-        print(csrf_token)
         resp = client.post(
             "/login/",
             data=dict(
@@ -112,13 +103,9 @@ class TestBasicFlaskApp:
         )
         assert resp.status_code == 200
 
-        resp = client.get(
-            "/account",
-        )
+        resp = client.get("/account")
         assert resp.status_code == 200
-        resp = client.get(
-            "/logout/",
-        )
+        resp = client.get("/logout/")
         assert resp.status_code == 302
 
 
@@ -128,12 +115,9 @@ def logged_in_client(client):
     db.session.query(User).delete()
     db.session.commit()
 
-    try:
-        resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
-        assert resp.status_code == 302
-        assert "login" in resp.location
-    except OperationalError:
-        pass
+    resp = client.post("/register", data={"email": "foo", "psw": 'bar'})
+    assert resp.status_code == 302
+    assert "login" in resp.location
 
     resp = client.get("/login/")
     assert resp.status_code == 200
@@ -154,13 +138,47 @@ def logged_in_client(client):
 
 
 class TestLoggedInBasicFlaskApp:
-
     @pytest.mark.parametrize("page", ["/account", "/history", "/dashboard"])
     def test_page_login(self, logged_in_client, page):
         """test that browsing to the account page while logged in goes on
         as intended"""
         resp = logged_in_client.get(page)
         assert resp.status_code == 200
+
+
+def create_trade_session(logged_in_client):
+    """test helper function to create a trade session via the API"""
+    resp = logged_in_client.post(
+        "/trades_sessions/",
+        data=json.dumps({
+            "ticker": "foobar",
+            "start_time": "2020-04-04T20:43:41.225Z",
+        }),
+        content_type='application/json'
+    )
+    assert resp.status_code == 201
+    assert resp.is_json
+    return resp.json
+
+
+def create_trade(logged_in_client):
+    """test helper function to create a trade via the API and a provided
+    session id"""
+    session = create_trade_session(logged_in_client)
+    resp = logged_in_client.post(
+        "/trades/",
+        data=json.dumps({
+            "session_id": session["session_id"],
+            "trade_type": "BUY",
+            "price": 1,
+            "volume": 1,
+            "time_stamp": "2020-04-04T20:43:41.225Z",
+        }),
+        content_type='application/json'
+    )
+    assert resp.status_code == 201
+    assert resp.is_json
+    return resp.json
 
 
 class TestLoggedInFlaskRestxApp:
@@ -189,26 +207,14 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
         assert resp.json["session_id"]
 
-        # TODO: cleanup
-
     def test_get_trades_session(self, logged_in_client):
-        resp = logged_in_client.post(
-            "/trades_sessions/",
-            data=json.dumps({
-                "ticker": "foobar",
-                "start_time": "2020-04-04T20:43:41.225Z",
-            }),
-            content_type='application/json'
-        )
-        assert resp.status_code == 201
-        assert resp.is_json
-        session_id = resp.json["session_id"]
+        session = create_trade_session(logged_in_client)
         resp = logged_in_client.get(
-            f"/trades_sessions/{session_id}",
+            f"/trades_sessions/{session['session_id']}",
         )
         assert resp.status_code == 200
         assert resp.is_json
-        assert resp.json["session_id"] == session_id
+        assert resp.json["session_id"] == session['session_id']
 
     @pytest.mark.parametrize("url,is_paused,is_finished",
                              [
@@ -217,21 +223,11 @@ class TestLoggedInFlaskRestxApp:
                                  ("/trades_sessions/{}/start", False, False)
                              ])
     def test_post_update_trade_session(self, logged_in_client, url, is_paused, is_finished):
-        resp = logged_in_client.post(
-            "/trades_sessions/",
-            data=json.dumps({
-                "ticker": "foobar",
-                "start_time": "2020-04-04T20:43:41.225Z",
-            }),
-            content_type='application/json'
-        )
-        assert resp.status_code == 201
-        assert resp.is_json
-        session_id = resp.json["session_id"]
-        resp = logged_in_client.post(url.format(session_id))
+        session = create_trade_session(logged_in_client)
+        resp = logged_in_client.post(url.format(session['session_id']))
         assert resp.status_code == 200
         assert resp.is_json
-        assert resp.json["session_id"] == session_id
+        assert resp.json["session_id"] == session['session_id']
         assert resp.json["is_finished"] == is_finished
         assert resp.json["is_paused"] == is_paused
 
@@ -241,22 +237,28 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
 
     def test_post_trade(self, logged_in_client):
+        session = create_trade_session(logged_in_client)
         resp = logged_in_client.post(
-            "/trades_sessions/",
+            "/trades/",
             data=json.dumps({
-                "ticker": "foobar",
-                "start_time": "2020-04-04T20:43:41.225Z",
+                "session_id": session['session_id'],
+                "trade_type": "BUY",
+                "price": 1,
+                "volume": 1,
+                "time_stamp": "2020-04-04T20:43:41.225Z",
             }),
             content_type='application/json'
         )
         assert resp.status_code == 201
         assert resp.is_json
+        assert resp.json["trade_id"]
 
-        session_id = resp.json["session_id"]
+    def test_post_trade_bad_trade_type(self, logged_in_client):
+        session = create_trade_session(logged_in_client)
         resp = logged_in_client.post(
             "/trades/",
             data=json.dumps({
-                "session_id": session_id,
+                "session_id": session['session_id'],
                 "trade_type": "BUY",
                 "price": 1,
                 "volume": 1,
@@ -269,32 +271,8 @@ class TestLoggedInFlaskRestxApp:
         assert resp.json["trade_id"]
 
     def test_get_trade(self, logged_in_client):
-        resp = logged_in_client.post(
-            "/trades_sessions/",
-            data=json.dumps({
-                "ticker": "foobar",
-                "start_time": "2020-04-04T20:43:41.225Z",
-            }),
-            content_type='application/json'
-        )
-        assert resp.status_code == 201
-        assert resp.is_json
-
-        session_id = resp.json["session_id"]
-        resp = logged_in_client.post(
-            "/trades/",
-            data=json.dumps({
-                "session_id": session_id,
-                "trade_type": "BUY",
-                "price": 1,
-                "volume": 1,
-                "time_stamp": "2020-04-04T20:43:41.225Z",
-            }),
-            content_type='application/json'
-        )
-        assert resp.status_code == 201
-        assert resp.is_json
-        trade_id = resp.json["trade_id"]
+        trade = create_trade(logged_in_client)
+        trade_id = trade["trade_id"]
         resp = logged_in_client.get(
             f"/trades/{trade_id}",
         )
