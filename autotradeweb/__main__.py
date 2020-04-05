@@ -10,6 +10,7 @@ import sys
 from logging import getLogger
 from logging.handlers import TimedRotatingFileHandler
 
+import graypy
 from cheroot.wsgi import Server as WSGIServer, PathInfoDispatcher
 from flask import url_for
 from flask_restx import Api
@@ -50,6 +51,17 @@ def add_log_parser(parser):
     group.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose logging"
     )
+    group.add_argument(
+        "--graylog-address",
+        dest="graylog_address",
+        help="Enable graylog for TCP log forwarding at the IP address specified.",
+    )
+    group.add_argument(
+        "--graylog-port",
+        dest="graylog_port",
+        default=12201,
+        help="Port for graylog TCP log forwarding.",
+    )
 
 
 def init_logging(args, log_file_path):
@@ -74,6 +86,10 @@ def init_logging(args, log_file_path):
         stream_handler.setFormatter(log_format)
         stream_handler.setLevel(args.log_level)
         handlers_.append(stream_handler)
+
+    if args.graylog_address:
+        graylog_handler = graypy.GELFTCPHandler(args.graylog_address, args.graylog_port)
+        handlers_.append(graylog_handler)
 
     logging.basicConfig(handlers=handlers_, level=args.log_level)
 
