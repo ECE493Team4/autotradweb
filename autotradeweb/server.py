@@ -434,11 +434,11 @@ class TradingSessionPause(Resource):
             abort(404, 'trading session not found')
         trading_session_.is_paused = True
         db.session.commit()
-        return trading_session_
+        return trading_session_.to_dict()
 
 
 @trading_sessions_ns.route("/<int:session_id>/start")
-class TradingSessionResume(Resource):
+class TradingSessionStart(Resource):
     @login_required(basic=True)
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
     def post(self, session_id):
@@ -454,11 +454,11 @@ class TradingSessionResume(Resource):
             abort(404, 'trading session not found')
         trading_session_.is_paused = False
         db.session.commit()
-        return trading_session_
+        return trading_session_.to_dict()
 
 
 @trading_sessions_ns.route("/<int:session_id>/finish")
-class TradingSessionResume(Resource):
+class TradingSessionFinish(Resource):
     @login_required(basic=True)
     @trading_sessions_ns.marshal_with(TRADING_SESSION)
     def post(self, session_id):
@@ -478,7 +478,7 @@ class TradingSessionResume(Resource):
             abort(404, 'trading session not found')
         trading_session_.is_finished = True
         db.session.commit()
-        return trading_session_
+        return trading_session_.to_dict()
 
 
 trade_ns = api.namespace('trades', description='stock trade operations')
@@ -511,7 +511,6 @@ class TradeList(Resource):
             )\
             .all()
         return [trade_.to_dict() for trade_ in trades]
-
 
     # TODO: using basic here makes unit test fails (maybe this is a issue with flask-restx?)
     @login_required()
