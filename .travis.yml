@@ -20,6 +20,7 @@ after_success:
 
 jobs:
   include:
+    - python: 3.6
     - stage: lint
       name: "black"
       python:
