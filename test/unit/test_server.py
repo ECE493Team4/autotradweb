@@ -277,7 +277,7 @@ class TestDatabaseBindings:
         user = User(username="foo", password="bar")
         db.session.add(user)
         db.session.commit()
-        assert user.id
+        assert user.id is not None
         assert user.to_dict()
 
     def test_add_trading_session(self):
@@ -286,13 +286,13 @@ class TestDatabaseBindings:
         )
         db.session.add(trading_session_)
         db.session.commit()
-        assert trading_session_.session_id
+        assert trading_session_.session_id is not None
         assert trading_session_.to_dict()
 
     def test_get_trade(self):
         trade_ = db.session.query(trade).first()
         assert trade_
-        assert trade_.trade_id
+        assert trade_.trade_id is not None
         assert trade_.to_dict()
 
     def test_get_stock_prediction(self):
