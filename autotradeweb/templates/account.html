@@ -130,7 +130,7 @@ var username = ""
 var total_sessions = 0
 var active_sessions = 0
 
-getJSON('/user',
+getJSON('/user/',
 function(err, data) {
   if (err !== null) {
     alert('Something went wrong, please refresh. ');
@@ -142,7 +142,7 @@ function(err, data) {
   }
 });
 
-getJSON('/trade_sessions',
+getJSON('/trades_sessions/',
 function(err, data) {
   if (err !== null) {
     alert('Something went wrong, please refresh. ');
@@ -160,7 +160,7 @@ function(err, data) {
   }
 });
 
-getJSON('/trades',
+getJSON('/trades/',
 function(err, data) {
   if (err !== null) {
     alert('Something went wrong, please refresh. ');
