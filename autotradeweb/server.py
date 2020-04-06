@@ -79,6 +79,7 @@ class trading_session(db.Model):
     ticker = db.Column(db.String(80))
     start_time = db.Column(db.DateTime())
     end_time = db.Column(db.DateTime())
+    num_trades = db.Column(db.Integer, default=0)
     is_paused = db.Column(db.Boolean(), default=False)
     is_finished = db.Column(db.Boolean(), default=False)
 
@@ -92,6 +93,7 @@ class trading_session(db.Model):
             "is_finished": self.is_finished,
             "start_time": self.start_time,
             "end_time": self.end_time,
+            "num_trades": int(self.num_trades),
         }
 
 
@@ -114,7 +116,7 @@ class stock_prediction(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), index=True, unique=True, nullable=False)
-    password = db.Column(db.String(80), index=True, unique=True, nullable=False)
+    password = db.Column(db.String(80), index=True, nullable=False)
     # TODO: NOTE: bank is set to 5000 for demo purposes
     bank = db.Column(db.Float(), default=5000.0, nullable=False)
 
@@ -203,14 +205,14 @@ DASH.layout = html.Div(
                 dcc.Graph(
                     id="stock-value-timeline-graph",
                     figure={
-                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"},],
+                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"}],
                         "layout": {
                             "title": "Stock Value",
                             "xaxis": {"title": "Datetime"},
                             "yaxis": {"title": "Stock Value"},
                         },
                     },
-                ),
+                )
             ]
         ),
     ],
@@ -296,7 +298,7 @@ def update_stock_timeline(start_date, end_date, stock_id):
                 "type": "scatter",
                 "name": "actual values",
                 "mode": "markers",
-            },
+            }
         ]
         + predictors,
         "layout": {
@@ -359,6 +361,7 @@ TRADING_SESSION = api.model(
         "is_finished": fields.Boolean(default=False),
         "start_time": fields.DateTime(),
         "end_time": fields.DateTime(),
+        "num_trades": fields.Integer(default=0),
     },
 )
 

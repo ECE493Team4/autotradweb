@@ -103,6 +103,6 @@ setup(
         "beautifulsoup4>=4.8.2,<5.0.0",
         # "dash[testing]>=1.9.1,<2.0.0",
     ],
-    entry_points={"console_scripts": ["autotradeweb = autotradeweb.__main__:main",],},
+    entry_points={"console_scripts": ["autotradeweb = autotradeweb.__main__:main"]},
     cmdclass={"test": PyTest, "lint": Pylint},
 )
