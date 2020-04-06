@@ -447,7 +447,6 @@ def statistics():
     return render_template("statistics.html")
 
 
-
 ####################
 # API definitions
 ####################
