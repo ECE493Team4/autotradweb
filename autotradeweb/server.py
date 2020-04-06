@@ -93,7 +93,7 @@ class trading_session(db.Model):
             "is_finished": self.is_finished,
             "start_time": self.start_time,
             "end_time": self.end_time,
-            "num_trades": int(self.num_trades)
+            "num_trades": int(self.num_trades),
         }
 
 
@@ -204,14 +204,14 @@ DASH.layout = html.Div(
                 dcc.Graph(
                     id="stock-value-timeline-graph",
                     figure={
-                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"},],
+                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"}],
                         "layout": {
                             "title": "Stock Value",
                             "xaxis": {"title": "Datetime"},
                             "yaxis": {"title": "Stock Value"},
                         },
                     },
-                ),
+                )
             ]
         ),
     ],
@@ -297,7 +297,7 @@ def update_stock_timeline(start_date, end_date, stock_id):
                 "type": "scatter",
                 "name": "actual values",
                 "mode": "markers",
-            },
+            }
         ]
         + predictors,
         "layout": {
