@@ -58,7 +58,9 @@ class TestBasicFlaskApp:
         resp = client.get("/logout/")
         assert resp.status_code == 302
 
-    @pytest.mark.parametrize("page", ["/account", "/history", "/dashboard"])
+    @pytest.mark.parametrize(
+        "page", ["/account", "/history", "/dashboard", "/statistics"]
+    )
     def test_page_no_login_no_access(self, client, page):
         """test that browsing to the account page while logged out
         redirects the user to the login page"""
@@ -126,7 +128,9 @@ def logged_in_client(client):
 
 
 class TestLoggedInBasicFlaskApp:
-    @pytest.mark.parametrize("page", ["/account", "/history", "/dashboard"])
+    @pytest.mark.parametrize(
+        "page", ["/account", "/history", "/dashboard", "/statistics"]
+    )
     def test_page_login(self, logged_in_client, page):
         """test that browsing to the account page while logged in goes on
         as intended"""
