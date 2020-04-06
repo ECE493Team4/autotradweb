@@ -151,6 +151,7 @@ def main(argv=sys.argv[1:]) -> int:
         APP.run(host=args.host, port=args.port, debug=True)
     else:
         path_info_dispatcher = PathInfoDispatcher({"/": APP})
+        # See SRS: S.8.R.4
         server = WSGIServer((args.host, args.port), path_info_dispatcher)
         try:
             server.start()
