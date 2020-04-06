@@ -25,8 +25,40 @@ directory containing ``setup.py``:
 Usage
 =====
 
-To start a debug instance of the autotradeweb server run the following command:
+To get help on starting up autotradeweb run the following command:
 
 .. code-block:: console
 
-    autotradeweb -v --debug -d 127.0.0.1 -p 8089
+    autotradeweb --help
+
+
+Testing
+=======
+
+Unit/Instrumentation Testing
+----------------------------
+
+To run unit and instrumentation testing for autotradeweb you must have a valid
+database URI to the remote autotradeweb PostgreSQL test database. Afterwards,
+you must set the environment ``TEST_DATABASE_URI`` variable with this URI:
+
+.. code-block:: console
+
+    TEST_DATABASE_URI=<your database URI to the remote autotradeweb PostgreSQL test database>
+
+After, setting this environment variable you can run the pytest suite for
+autotradeweb fully with the following command:
+
+.. code-block:: console
+
+    python setup.py test
+
+Static Analysis
+---------------
+
+To run static analysis testing over autotradeweb with pylint run the following
+command:
+
+.. code-block:: console
+
+    python setup.py lint
