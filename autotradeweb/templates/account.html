@@ -123,35 +123,35 @@
     };
 
     var setTableRow = function (rowNum, trade) {
-        var sid = trade.session_id
+        var sid = trade.session_id;
         getJSON('/trades_sessions/' + sid.toString(),
             function (err, data) {
                 if (err !== null) {
                     alert('Something went wrong, please refresh. ');
                 } else {
-                    ticker = data.ticker
-                    document.getElementById("ticker" + rowNum.toString()).innerHTML = ticker.toString()
-                    document.getElementById("type" + rowNum.toString()).innerHTML = trade.trade_type.toString()
-                    document.getElementById("volume" + rowNum.toString()).innerHTML = ticker.volume.toString()
-                    document.getElementById("price" + rowNum.toString()).innerHTML = ticker.price.toString()
+                    ticker = data.ticker;
+                    document.getElementById("ticker" + rowNum.toString()).innerHTML = ticker.toString();
+                    document.getElementById("type" + rowNum.toString()).innerHTML = trade.trade_type.toString();
+                    document.getElementById("volume" + rowNum.toString()).innerHTML = ticker.volume.toString();
+                    document.getElementById("price" + rowNum.toString()).innerHTML = ticker.price.toString();
                 }
             });
     };
 
-    var bank = 0
-    var username = ""
-    var total_sessions = 0
-    var active_sessions = 0
-    var number_of_trades = 0
+    var bank = 0;
+    var username = "";
+    var total_sessions = 0;
+    var active_sessions = 0;
+    var number_of_trades = 0;
 
     getJSON('/user/',
         function (err, data) {
             if (err !== null) {
                 alert('Something went wrong, please refresh. ');
             } else {
-                bank = data.bank
-                username = data.username
-                document.getElementById("funds").innerHTML = bank.toString()
+                bank = data.bank;
+                username = data.username;
+                document.getElementById("funds").innerHTML = bank.toString();
                 document.getElementById("username").innerHTML = username
             }
         });
