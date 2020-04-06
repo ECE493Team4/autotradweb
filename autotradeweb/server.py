@@ -224,7 +224,7 @@ DASH.layout = html.Div(
     Output("add-trade-session", "disabled"),
     [Input("add-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
 )
-@login_required
+@login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
     username = get_username()
     trading_session_ = (
@@ -256,7 +256,7 @@ def on_click(n_clicks, stock_id):
     Output("pause-trade-session", "disabled"),
     [Input("pause-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
 )
-@login_required
+@login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
     __log__.debug(f"pausing trading session for stock {stock_id}")
     username = get_username()
@@ -280,7 +280,7 @@ def on_click(n_clicks, stock_id):
     Output("start-trade-session", "disabled"),
     [Input("start-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
 )
-@login_required
+@login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
     __log__.debug(f"starting trading session for stock {stock_id}")
     username = get_username()
@@ -304,7 +304,7 @@ def on_click(n_clicks, stock_id):
     Output("finish-trade-session", "disabled"),
     [Input("finish-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
 )
-@login_required
+@login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
     __log__.debug(f"finishing trading session for stock {stock_id}")
     username = get_username()
