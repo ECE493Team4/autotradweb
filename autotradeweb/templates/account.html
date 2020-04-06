@@ -165,13 +165,13 @@ function(err, data) {
   if (err !== null) {
     alert('Something went wrong, please refresh. ');
   } else {
-        trades = data.sort((a,b) {
-            ta = new Date(a.time_stamp)
-            tb = new Date(b.time_stamp)
+        trades = data.sort(function(a,b) {
+            ta = new Date(a.time_stamp);
+            tb = new Date(b.time_stamp);
             if (ta > tb){return 1}
             if (tb > ta){return -1}
             else {return 0}
-        })
+        });
         for(var i = 0; i<5;i++)
         {
             setTableRow(i, trades[i])
