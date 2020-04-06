@@ -469,12 +469,6 @@ def history():
     return render_template("history.html")
 
 
-@APP.route("/statistics")
-@login_required
-def statistics():
-    return render_template("statistics.html")
-
-
 ####################
 # Account Page
 # See SRS: S.13
@@ -485,6 +479,18 @@ def statistics():
 @login_required
 def account():
     return render_template("account.html")
+
+
+####################
+# Statistics Page
+# See SRS: S.14
+####################
+
+
+@APP.route("/statistics")
+@login_required
+def statistics():
+    return render_template("statistics.html")
 
 
 ######################
