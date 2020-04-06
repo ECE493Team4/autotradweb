@@ -35,7 +35,7 @@
     };
 
 
-    getJSON('/user',
+    getJSON('/user/',
         function (err, data) {
             if (err !== null) {
                 alert('Something went wrong, please refresh. ');
@@ -46,7 +46,7 @@
         });
 
 
-    getJSON('/trades_sessions',
+    getJSON('/trades_sessions/',
         function (err, data) {
             if (err !== null) {
                 alert('Something went wrong, please refresh.');
@@ -67,7 +67,7 @@
                     theHTML += "</div>";
                     theHTML += "</div>";
                     document.getElementById("infomation").innerHTML = theHTML;
-                    getJSON('/trades',
+                    getJSON('/trades/',
                         function (err, data) {
                             if (err !== null) {
                                 alert('Something went wrong, please refresh. ');
