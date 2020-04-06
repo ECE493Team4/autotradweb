@@ -138,9 +138,7 @@ def create_trade_session(logged_in_client):
     """test helper to create a trade session via the API"""
     resp = logged_in_client.post(
         "/trades_sessions/",
-        data=json.dumps(
-            {"ticker": "foobar", "start_time": "2020-04-04T20:43:41.225Z",}
-        ),
+        data=json.dumps({"ticker": "foobar", "start_time": "2020-04-04T20:43:41.225Z"}),
         content_type="application/json",
     )
     assert resp.status_code == 201
@@ -186,7 +184,7 @@ class TestLoggedInFlaskRestxApp:
         resp = logged_in_client.post(
             "/trades_sessions/",
             data=json.dumps(
-                {"ticker": "foobar", "start_time": "2020-04-04T20:43:41.225Z",}
+                {"ticker": "foobar", "start_time": "2020-04-04T20:43:41.225Z"}
             ),
             content_type="application/json",
         )
@@ -196,7 +194,7 @@ class TestLoggedInFlaskRestxApp:
 
     def test_get_trades_session(self, logged_in_client):
         session = create_trade_session(logged_in_client)
-        resp = logged_in_client.get(f"/trades_sessions/{session['session_id']}",)
+        resp = logged_in_client.get(f"/trades_sessions/{session['session_id']}")
         assert resp.status_code == 200
         assert resp.is_json
         assert resp.json["session_id"] == session["session_id"]
@@ -266,7 +264,7 @@ class TestLoggedInFlaskRestxApp:
     def test_get_trade(self, logged_in_client):
         trade = create_trade(logged_in_client)
         trade_id = trade["trade_id"]
-        resp = logged_in_client.get(f"/trades/{trade_id}",)
+        resp = logged_in_client.get(f"/trades/{trade_id}")
         assert resp.status_code == 200
         assert resp.is_json
         assert resp.json["trade_id"] == trade_id

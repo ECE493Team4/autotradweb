@@ -188,10 +188,10 @@ DASH.layout = html.Div(
                     multi=False,
                     placeholder="Select a Stock...",
                 ),
-                html.Button('Add trade session', id='add-trade-session'),
-                html.Button('pause trade session', id='pause-trade-session'),
-                html.Button('start trade session', id='start-trade-session'),
-                html.Button('Finish trade session', id='finish-trade-session'),
+                html.Button("Add trade session", id="add-trade-session"),
+                html.Button("pause trade session", id="pause-trade-session"),
+                html.Button("start trade session", id="start-trade-session"),
+                html.Button("Finish trade session", id="finish-trade-session"),
                 html.H3(children=["Date Range"]),
                 dcc.DatePickerRange(
                     id="date-picker-range",
@@ -206,37 +206,40 @@ DASH.layout = html.Div(
                 dcc.Graph(
                     id="stock-value-timeline-graph",
                     figure={
-                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"},],
+                        "data": [{"y": [], "x": [], "type": "scatter", "name": "SF"}],
                         "layout": {
                             "title": "Stock Value",
                             "xaxis": {"title": "Datetime"},
                             "yaxis": {"title": "Stock Value"},
                         },
                     },
-                ),
+                )
             ]
         ),
     ],
 )
 
 
-@DASH.callback(Output("add-trade-session", "disabled"), [Input('add-trade-session', 'n_clicks'), Input("stock-dropdown", "value")])
+@DASH.callback(
+    Output("add-trade-session", "disabled"),
+    [Input("add-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+)
 @login_required
 def on_click(n_clicks, stock_id):
     username = get_username()
     trading_session_ = (
         db.session.query(trading_session)
-            .filter(
+        .filter(
             trading_session.is_finished != True,
             trading_session.ticker == stock_id,
             trading_session.username == username,
         )
-            .first()
+        .first()
     )
     if trading_session_:  # only have one trading session for each stock ticker
         abort(409, f"trading session already exists for stock {stock_id}")
     else:
-        __log__.debug(f'adding trading session for stock {stock_id}')
+        __log__.debug(f"adding trading session for stock {stock_id}")
         new_trading_session_db = trading_session(
             username=username,
             start_time=datetime.now(),
@@ -249,20 +252,23 @@ def on_click(n_clicks, stock_id):
         db.session.commit()
 
 
-@DASH.callback(Output("pause-trade-session", "disabled"), [Input('pause-trade-session', 'n_clicks'), Input("stock-dropdown", "value")])
+@DASH.callback(
+    Output("pause-trade-session", "disabled"),
+    [Input("pause-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+)
 @login_required
 def on_click(n_clicks, stock_id):
-    __log__.debug(f'pausing trading session for stock {stock_id}')
+    __log__.debug(f"pausing trading session for stock {stock_id}")
     username = get_username()
     trading_session_ = (
         db.session.query(trading_session)
-            .filter(
+        .filter(
             trading_session.is_finished != True,
             trading_session.is_paused != True,
             trading_session.ticker == stock_id,
             trading_session.username == username,
         )
-            .first()
+        .first()
     )
     if not trading_session_:
         abort(404, "running trading session not found")
@@ -270,20 +276,23 @@ def on_click(n_clicks, stock_id):
     db.session.commit()
 
 
-@DASH.callback(Output("start-trade-session", "disabled"), [Input('start-trade-session', 'n_clicks'), Input("stock-dropdown", "value")])
+@DASH.callback(
+    Output("start-trade-session", "disabled"),
+    [Input("start-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+)
 @login_required
 def on_click(n_clicks, stock_id):
-    __log__.debug(f'starting trading session for stock {stock_id}')
+    __log__.debug(f"starting trading session for stock {stock_id}")
     username = get_username()
     trading_session_ = (
         db.session.query(trading_session)
-            .filter(
+        .filter(
             trading_session.is_finished != True,
             trading_session.is_paused == True,
             trading_session.ticker == stock_id,
             trading_session.username == username,
         )
-            .first()
+        .first()
     )
     if not trading_session_:
         abort(404, "paused trading session not found")
@@ -291,19 +300,22 @@ def on_click(n_clicks, stock_id):
     db.session.commit()
 
 
-@DASH.callback(Output("finish-trade-session", "disabled"), [Input('finish-trade-session', 'n_clicks'), Input("stock-dropdown", "value")])
+@DASH.callback(
+    Output("finish-trade-session", "disabled"),
+    [Input("finish-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+)
 @login_required
 def on_click(n_clicks, stock_id):
-    __log__.debug(f'finishing trading session for stock {stock_id}')
+    __log__.debug(f"finishing trading session for stock {stock_id}")
     username = get_username()
     trading_session_ = (
         db.session.query(trading_session)
-            .filter(
+        .filter(
             trading_session.is_finished != True,
             trading_session.ticker == stock_id,
             trading_session.username == username,
         )
-            .first()
+        .first()
     )
     if not trading_session_:
         abort(404, "trading session not found")
@@ -390,7 +402,7 @@ def update_stock_timeline(start_date, end_date, stock_id):
                 "type": "scatter",
                 "name": "actual values",
                 "mode": "markers",
-            },
+            }
         ]
         + predictors,
         "layout": {
