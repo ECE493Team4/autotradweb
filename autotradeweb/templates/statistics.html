@@ -60,7 +60,7 @@
                     theHTML += "</div>";
                     theHTML += "</div>";
                     document.getElementById("infomation").innerHTML = theHTML;
-                    getJSON('/trades',
+                    getJSON('/trades/',
                         function (err, data) {
                             if (err !== null) {
                                 alert('Something went wrong, please refresh. ');
