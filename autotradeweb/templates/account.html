@@ -129,6 +129,7 @@ var bank = 0
 var username = ""
 var total_sessions = 0
 var active_sessions = 0
+var number_of_trades = 0
 
 getJSON('/user/',
 function(err, data) {
@@ -147,16 +148,18 @@ function(err, data) {
   if (err !== null) {
     alert('Something went wrong, please refresh. ');
   } else {
-    total_sessions = data.length
-    document.getElementById("total_t").innerHTML = total_sessions.toString()
+    total_sessions = data.length;
+    document.getElementById("total_t").innerHTML = total_sessions.toString();
     for (var i = 0; i<total_sessions;i++)
     {
-        if(!total_sessions[i].is_finished)
+        if(!data[i].is_finished)
         {
-            active_sessions += 1
+            active_sessions += 1;
+            number_of_trades += data[i].num_trades;
         }
     }
-    document.getElementById("active").innerHTML = active_sessions.toString()
+    document.getElementById("active").innerHTML = active_sessions.toString();
+    document.getElementById("trades").innerHTML = number_of_trades.toString();
   }
 });
 
