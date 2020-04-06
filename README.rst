@@ -15,7 +15,8 @@ Installation
 ============
 
 To install autotradeweb and its dependencies within your local python
-environment run the following command within then projects directory:
+environment run the following command within the autotradeweb project
+directory containing ``setup.py``:
 
 .. code-block:: console
 
@@ -24,7 +25,7 @@ environment run the following command within then projects directory:
 Usage
 =====
 
-To start a debug instance of the autotradeweb server run the following:
+To start a debug instance of the autotradeweb server run the following command:
 
 .. code-block:: console
 
