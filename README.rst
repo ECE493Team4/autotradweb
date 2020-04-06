@@ -11,6 +11,16 @@ Description
 
 Front end web server for autotrader capstone project.
 
+Installation
+============
+
+To install autotradeweb and its dependencies within your local python
+environment run the following command within then projects directory:
+
+.. code-block:: console
+
+    pip install .
+
 Usage
 =====
 
