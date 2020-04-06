@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='history_stylesheet.css') }}" />
+</head>
+<body>
+  <h1> History </h1>
+  <h1> Welcome User : <span id="username" > </span> </h1>
+  <div id = "infomation">
+  </div>
+  
+  
+</body>
+</html>
+
+<script>
+var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      var status = xhr.status;
+      if (status === 200) {
+        callback(null, xhr.response);
+      } else {
+        callback(status, xhr.response);
+      }
+    };
+    xhr.send();
+};
+
+
+getJSON('/user',
+function(err, data) {
+  if (err !== null) {
+    alert('Something went wrong, please refresh. ');
+  } else {
+    var username = data.username
+    document.getElementById("username").innerHTML = username;
+  }
+});
+
+
+
+
+getJSON('/trades_sessions',
+function(err, data) {
+  if (err !== null) {
+    alert('Something went wrong, please refresh.');
+  } else {
+    trades_sessions = data
+    var theHTML="";
+    for (let i in trades_sessions){
+      theHTML += "<div class = 'trades_session' id ='trades_session_"  + trades_sessions[i].session_id +"'>";
+      theHTML += "<div class='trades_sessions_header' >"
+      theHTML += "<span>" + 'Session ID: '+trades_sessions[i].session_id + " </span>";
+      theHTML += "<span>" + 'Stock Name: '+trades_sessions[i].ticker + " </span>";
+      theHTML += "<span>" + 'Paused : '+trades_sessions[i].is_paused + " </span>";
+      theHTML += "<span>" + 'Finished : '+trades_sessions[i].is_finished + " </span>";
+      theHTML += "<span>" + 'Start : '+trades_sessions[i].start_time + " </span>";
+      theHTML += "<span>" + 'End : '+trades_sessions[i].end_time + " </span>";
+      theHTML += "</div>";
+      theHTML += "<div id = 'trades_info_" + trades_sessions[i].session_id +"'>";
+      theHTML += "</div>";
+      theHTML += "</div>";
+      document.getElementById("infomation").innerHTML = theHTML;
+      getJSON('/trades',
+      function(err, data) {
+        if (err !== null) {
+          alert('Something went wrong, please refresh. ');
+        } else {
+          trades = data;
+          // console.log(trades);
+          const result = trades.filter(function(item){
+                return item.session_id == trades_sessions[i].session_id ;         
+          });
+          // console.log(result);
+          if (result.length >0){
+            var total_trade  = result.length
+            var total_buy = result.filter(function(item){ return item.trade_type == 'BUY';}).length
+            var total_sell = result.filter(function(item){ return item.trade_type == 'SELL' ;}).length
+            var total_buy_volume = result.filter(function(item){ return item.trade_type == 'BUY';}).reduce(function(prev, cur) {
+              return prev + cur.volume;
+            }, 0);
+            var total_sell_volume = result.filter(function(item){ return item.trade_type == 'SELL';}).reduce(function(prev, cur) {
+              return prev + cur.volume;
+            }, 0);
+            
+            var total_buy_value = result.filter(function(item){ return item.trade_type == 'BUY';}).reduce(function(prev, cur) {
+              return prev + (cur.price * cur.volume);
+            }, 0);
+            
+            var total_sell_value = result.filter(function(item){ return item.trade_type == 'SELL';}).reduce(function(prev, cur) {
+              return prev +(cur.price * cur.volume);
+            }, 0);
+            
+            var html_template = "";
+            html_template += "<table class="+"'static_table'"+" >";
+            html_template += "<thead> <tr>  <th>Total Trade </th> <th>Total Buy</th> <th>Total Buy Volume</th> <th>Total Sell</th> <th>Total Sell volume</th> <th>Total Buy value</th> <th>Total Sell value</th> </tr> </thead>" ;
+            html_template += "<tbody>"
+            html_template += "<tr>";
+            html_template += "<td>" + total_trade  +"</td>";
+            html_template += "<td>" + total_buy  +"</td>";
+            html_template += "<td>" + total_buy_volume  +"</td>";
+            html_template += "<td>" + total_sell  +"</td>";
+            html_template += "<td>" + total_sell_volume  +"</td>";
+            html_template += "<td>" + total_buy_value  +"</td>";
+            html_template += "<td>" + total_sell_value  +"</td>";
+            html_template += "</tr>";
+            
+            html_template += "</tbody> <tfoot> </tfoot> </table>";
+            document.getElementById('trades_info_' + trades_sessions[i].session_id).innerHTML = html_template;
+            
+            
+            
+            
+            
+
+        }else{
+          ;
+        }
+
+        }
+      });
+
+    }
+    
+  }
+  
+
+});
+
+
+
+
+
+
+</script>

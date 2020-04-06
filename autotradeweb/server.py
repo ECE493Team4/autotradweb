@@ -331,6 +331,13 @@ def history():
     return render_template("history.html")
 
 
+@APP.route("/statistics")
+@login_required
+def statistics():
+    return render_template("statistics.html")
+
+
+
 ####################
 # API definitions
 ####################
