@@ -1,0 +1,26 @@
+.trades_sessions_header {
+    border-radius: 5px;
+    background: #55b76b;
+    padding: 10px;
+    color: white;
+}
+
+.trades_session{
+  margin-bottom: 18px;
+}
+
+.trades_sessions_header span {
+  border-radius: 5px;
+  background: #3d8643;
+  padding: 3px;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+.sortable-theme-light{
+  width:100%
+}
+
+body
+{
+  font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
