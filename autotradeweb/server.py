@@ -32,6 +32,14 @@ APP.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(APP)
 
 
+##############
+# Login page
+# See SRS: S.9
+##############
+
+# See SRS: S.9.R.1
+# See SRS: S.9.R.2
+# See SRS: S.9.R.3
 def validate_login(user):
     db_user = User.query.filter_by(username=user["username"]).first()
     if db_user is None:
@@ -47,7 +55,16 @@ def validate_login(user):
         return False
 
 
+# See SRS: S.9.R.1
+# See SRS: S.9.R.2
+# See SRS: S.9.R.3
 SL_APP = SimpleLogin(APP, login_checker=validate_login)
+
+
+#################################
+# Database Connection definitions
+# See SRS: S.7.R.3
+#################################
 
 
 class trade(db.Model):
@@ -136,14 +153,26 @@ def init_db():
     db.create_all()
 
 
-##################
+###################
 # main frontend
-##################
+# See SRS: S.11.R.2
+###################
 
 
 @APP.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
+
+
+@APP.route("/static/<path:path>")
+def static_file(path):
+    static_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "static")
+    return send_from_directory(static_folder, path)
+
+
+##################
+# register page
+##################
 
 
 @APP.route("/register", methods=["GET"])
@@ -164,15 +193,10 @@ def register_submit():
     return redirect("/login")
 
 
-@APP.route("/static/<path:path>")
-def static_file(path):
-    static_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "static")
-    return send_from_directory(static_folder, path)
-
-
-##################
-# dash frontend
-##################
+###############
+# Dashboard
+# See SRS: S.10
+###############
 
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
@@ -191,6 +215,8 @@ DASH.layout = html.Div(
                     multi=False,
                     placeholder="Select a Stock...",
                 ),
+                # See SRS: S.10.R.2
+                # See SRS: S.10.R.6.D.1
                 html.Button("Add trade session", id="add-trade-session"),
                 html.Button("pause trade session", id="pause-trade-session"),
                 html.Button("start trade session", id="start-trade-session"),
@@ -223,6 +249,7 @@ DASH.layout = html.Div(
 )
 
 
+# See SRS: S.10.R.6.D.1
 @DASH.callback(
     Output("add-trade-session", "disabled"),
     [Input("add-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
@@ -338,6 +365,7 @@ def set_stock_timeline_options(v):
     return [{}]
 
 
+# See SRS: S.10.R.5
 @DASH.callback(
     Output("stock-value-timeline-graph", "figure"),
     [
@@ -429,10 +457,10 @@ def stock_timeline():
     return DASH.index()
 
 
-@APP.route("/account")
-@login_required
-def account():
-    return render_template("account.html")
+####################
+# History Page
+# See SRS: S.12
+####################
 
 
 @APP.route("/history")
@@ -442,8 +470,21 @@ def history():
 
 
 ####################
-# API definitions
+# Account Page
+# See SRS: S.13
 ####################
+
+
+@APP.route("/account")
+@login_required
+def account():
+    return render_template("account.html")
+
+
+######################
+# API
+# See SRS: S.7.R.3.D.1
+######################
 
 api = Api(
     APP,
