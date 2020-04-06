@@ -117,7 +117,8 @@ class User(db.Model):
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), index=True, unique=True, nullable=False)
     password = db.Column(db.String(80), index=True, nullable=False)
-    bank = db.Column(db.Float(), default=0.0, nullable=False)
+    # TODO: NOTE: bank is set to 5000 for demo purposes
+    bank = db.Column(db.Float(), default=5000.0, nullable=False)
 
     def to_dict(self):
         return {
