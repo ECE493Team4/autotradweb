@@ -295,7 +295,7 @@ def on_click(n_clicks, stock_id):
         __log__.debug(f"adding trading session for stock {stock_id}")
         new_trading_session_db = trading_session(
             username=username,
-            start_time=datetime.now(),
+            start_time=datetime.utcnow(),
             end_time=None,
             ticker=stock_id,
             is_paused=False,
