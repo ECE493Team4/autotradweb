@@ -210,7 +210,7 @@ DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets
 DASH.layout = html.Div(
     style={"overflow-x": "hidden"},
     children=[
-        dash_dangerously_set_inner_html.DangerouslySetInnerHTML(
+        dash_dangerously_set_inner_html.DangerouslySetInnerHTML(  # pylint: disable=no-member
             """<div style="height:20%;background-color:black;width:100%;margin:none;display:-webkit-inline-flex">
 <div style="width:20%;text-align:center;margin:5px">
 <a href="/dashboard" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">Dashboard</a>
