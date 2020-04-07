@@ -414,20 +414,53 @@ class TestDatabaseBindings:
         assert user.id is not None
         assert user.to_dict()
 
-    def test_add_trading_session(self):
+    def test_add_and_get_trading_session(self):
+        # test add the trade session
+        trading_session_add = trading_session(
+            username="foo", ticker="bar", start_time=datetime.utcnow()
+        )
+        db.session.add(trading_session_add)
+        db.session.commit()
+        assert trading_session_add.session_id is not None
+        assert trading_session_add.to_dict()
+
+        # test get the trade session
+        trading_session_get = (
+            db.session.query(trading_session)
+            .filter(trading_session.session_id == trading_session_add.session_id)
+            .first()
+        )
+        assert trading_session_get
+        assert trading_session_get.session_id is not None
+        assert trading_session_get.to_dict()
+
+    def test_add_and_get_trade(self):
+        # add the required trading session
         trading_session_ = trading_session(
             username="foo", ticker="bar", start_time=datetime.utcnow()
         )
         db.session.add(trading_session_)
         db.session.commit()
-        assert trading_session_.session_id is not None
-        assert trading_session_.to_dict()
 
-    def test_get_trade(self):
-        trade_ = db.session.query(trade).first()
-        assert trade_
-        assert trade_.trade_id is not None
-        assert trade_.to_dict()
+        # test add the trade
+        trade_add = trade(
+            time_stamp=datetime.utcnow(),
+            session_id=trading_session_.session_id,
+            trade_type="BUY",
+            volume=1,
+            price=1,
+        )
+        db.session.add(trade_add)
+        db.session.commit()
+        assert trade_add.trade_id is not None
+
+        # test get the trade
+        trade_get = (
+            db.session.query(trade).filter(trade.trade_id == trade_add.trade_id).first()
+        )
+        assert trade_get
+        assert trade_get.trade_id is not None
+        assert trade_get.to_dict()
 
     def test_get_stock_prediction(self):
         stock_prediction_ = db.session.query(stock_prediction).first()
