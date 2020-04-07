@@ -145,14 +145,6 @@ class User(db.Model):
             "bank": float(self.bank),
         }
 
-    def __repr__(self):
-        return "<User {}>".format(self.username)
-
-
-def init_db():
-    """helper function to intialize the database"""
-    db.create_all()
-
 
 ###################
 # main frontend
