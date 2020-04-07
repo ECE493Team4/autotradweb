@@ -10,7 +10,7 @@
     <h1 style="color:white">Account Details</h2>
 </div>
 <div style="width:100%;height:400px;display:-webkit-flex">
-    <div style="width:20%;height:100%;display:-webkit-inline-flex">
+    <div style="width:1%;height:100%;display:-webkit-inline-flex">
         <span></span>
     </div>
     <div style="width:60%;height:100%;background-color:rgb(220, 222, 220);border-radius:10px;border:2px solid rgb(0, 189, 12)">
@@ -87,8 +87,22 @@
             </div>
         </div>
     </div>
-    <div style="width:20%;height:100%;display:-webkit-inline-flex">
-        <span></span>
+    <div style="width:35%;height:100%;background-color:rgb(220, 222, 220);border-radius:10px;border:2px solid rgb(0, 189, 12);margin-left:2%">
+        <div style="width:100%;height:15%;">
+            <h2 style="text-align:center;text-decoration:underline;margin-bottom:-15px;"><span id="username">Sessions</span></h2>
+        </div>
+        <div style="width:100%;">
+            <h2 id="no_sess" style="text-align:center"></h2>
+        </div>
+        <div style="width:100%;" style="padding:10px">
+            <table id="session_tbl" style="background-color:white;border-radius:5px;width:95%;padding:10px;height:80%;margin:auto">
+                <tr>
+                    <th>Ticker</th>
+                    <th>Num Trades</th>
+                    <th>Paused</th>
+                </tr>
+            </table>
+        </div>
     </div>
 </div>
 <br>
@@ -151,14 +165,26 @@ function(err, data) {
   } else {
     total_sessions = data.length
     document.getElementById("total_t").innerHTML = total_sessions.toString()
+    active = []
     for (var i = 0; i<total_sessions;i++)
     {
         if(!data[i].is_finished)
         {
             active_sessions += 1
+            active.push(data[i])
         }
     }
     document.getElementById("active").innerHTML = active_sessions.toString()
+    if(active_sessions <= 0)
+    {
+        document.getElementById("no_sess").innerHTML = "No Active Sessions"
+        document.getElementById("session_tbl").style.display = "none"
+    }
+    var tbl = document.getElementById("session_tbl")
+    for(var i = 0; i<active.length;i++)
+    {
+        tbl.innerHTML += "<tr style='text-align:center'><td>"+active[i].ticker+"</td><td>"+active[i].num_trades.toString()+"</td><td>"+active[i].is_paused.toString()+"</td></tr>"
+    }
   }
 });
 
