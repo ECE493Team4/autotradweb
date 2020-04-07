@@ -49,6 +49,11 @@ def client():
 
 
 class TestBasicFlaskApp:
+    def test_static_files(self, client):
+        resp = client.get("/static/stylesheet.css")
+        assert resp.status_code == 200
+        assert resp.content_type == "text/css; charset=utf-8"
+
     @pytest.mark.parametrize("page", ["/", "/api", "/register", "/login/"])
     def test_page_no_login_access(self, client, page):
         resp = client.get(page)
