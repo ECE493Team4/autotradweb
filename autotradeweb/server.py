@@ -9,6 +9,7 @@ from logging import getLogger
 
 import dash
 import dash_core_components as dcc
+import dash_dangerously_set_inner_html
 import dash_html_components as html
 from dash.dependencies import Input, Output
 from flask import Flask, render_template, send_from_directory, request, redirect
@@ -199,13 +200,35 @@ def register_submit():
 ###############
 
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+external_stylesheets = [
+    "https://codepen.io/chriddyp/pen/bWLwgP.css",
+    "/static/stylesheet.css",
+    "/static/dash-stylesheet.css",
+]
 
 DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets)
-
 DASH.layout = html.Div(
     style={"overflow-x": "hidden"},
     children=[
+        dash_dangerously_set_inner_html.DangerouslySetInnerHTML(
+            """<div style="height:20%;background-color:black;width:100%;margin:none;display:-webkit-inline-flex">
+<div style="width:20%;text-align:center;margin:5px">
+<a href="/dashboard" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">Dashboard</a>
+</div>
+<div style="width:20%;text-align:center;margin:5px">
+<a href="/account" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">Account</a>
+</div>
+<div style="width:20%;text-align:center;margin:5px">
+<a href="/history" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">History</a>
+</div>
+<div style="width:20%;text-align:center;margin:5px">
+<a href="/statistics" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">Statistics</a>
+</div>
+<div style="width:20%;text-align:center;margin:5px">
+<a href="/logout" style="font-size:24px;color:rgb(0, 189, 12);text-decoration:none">Logout</a>
+</div>
+</div>"""
+        ),
         html.Div(
             children=[
                 html.H3(children=["Stock Value"]),
