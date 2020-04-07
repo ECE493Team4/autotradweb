@@ -7,7 +7,7 @@
           href="{{ url_for('static', filename='history_stylesheet.css') }}"/>
 </head>
 <body>
-<h1> History </h1>
+<h1> Statistics </h1>
 <h1> Welcome User : <span id="username"> </span></h1>
 <div id="infomation">
 </div>
@@ -112,8 +112,8 @@
                                     html_template += "<td>" + total_buy_volume + "</td>";
                                     html_template += "<td>" + total_sell + "</td>";
                                     html_template += "<td>" + total_sell_volume + "</td>";
-                                    html_template += "<td>" + total_buy_value + "</td>";
-                                    html_template += "<td>" + total_sell_value + "</td>";
+                                    html_template += "<td>" + total_buy_value.toFixed(2) + "</td>";
+                                    html_template += "<td>" + total_sell_value.toFixed(2) + "</td>";
                                     html_template += "</tr>";
 
                                     html_template += "</tbody> <tfoot> </tfoot> </table>";
