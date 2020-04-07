@@ -11,7 +11,7 @@ import dash
 import dash_core_components as dcc
 import dash_dangerously_set_inner_html
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from flask import Flask, render_template, send_from_directory, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_simplelogin import SimpleLogin, login_required, get_username
@@ -275,7 +275,8 @@ DASH.layout = html.Div(
 # See SRS: S.10.R.6.D.1
 @DASH.callback(
     Output("add-trade-session", "disabled"),
-    [Input("add-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+    [Input("add-trade-session", "n_clicks")],
+    [State("stock-dropdown", "value")],
 )
 @login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
@@ -307,7 +308,8 @@ def on_click(n_clicks, stock_id):
 
 @DASH.callback(
     Output("pause-trade-session", "disabled"),
-    [Input("pause-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+    [Input("pause-trade-session", "n_clicks")],
+    [State("stock-dropdown", "value")],
 )
 @login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
@@ -331,7 +333,8 @@ def on_click(n_clicks, stock_id):
 
 @DASH.callback(
     Output("start-trade-session", "disabled"),
-    [Input("start-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+    [Input("start-trade-session", "n_clicks")],
+    [State("stock-dropdown", "value")],
 )
 @login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
@@ -355,7 +358,8 @@ def on_click(n_clicks, stock_id):
 
 @DASH.callback(
     Output("finish-trade-session", "disabled"),
-    [Input("finish-trade-session", "n_clicks"), Input("stock-dropdown", "value")],
+    [Input("finish-trade-session", "n_clicks")],
+    [State("stock-dropdown", "value")],
 )
 @login_required  # pylint: disable=function-redefined
 def on_click(n_clicks, stock_id):
