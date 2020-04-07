@@ -31,6 +31,19 @@ To get help on starting up autotradeweb run the following command:
 
     autotradeweb --help
 
+Development Usage
+------------------
+
+To start autotradeweb in a debugging instance connected to a remote testing
+PostgreSQL database specified by the URI ``TEST_DATABASE_URI`` run the
+following command:
+
+.. code-block:: console
+
+    autotradeweb --debug --verbose -d 127.0.0.1 -p 8999 --database <TEST_DATABASE_URI> --disable-https
+
+Afterwards, you should be able to access the autotradeweb web service
+at http://127.0.0.1:8999/
 
 Testing
 =======
