@@ -260,6 +260,18 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
         assert resp.json["session_id"] == session["session_id"]
 
+    def test_get_trades_session_not_exist(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        session = create_trade_session(logged_in_client)
+        non_exist_session_id = session["session_id"] + 1
+
+        resp = logged_in_client.get(f"/trades_sessions/{non_exist_session_id}")
+        assert resp.status_code == 404
+
     @pytest.mark.parametrize(
         "url,is_paused,is_finished",
         [
@@ -278,6 +290,27 @@ class TestLoggedInFlaskRestxApp:
         assert resp.json["session_id"] == session["session_id"]
         assert resp.json["is_finished"] == is_finished
         assert resp.json["is_paused"] == is_paused
+
+    @pytest.mark.parametrize(
+        "url,is_paused,is_finished",
+        [
+            ("/trades_sessions/{}/pause", True, False),
+            ("/trades_sessions/{}/finish", False, True),
+            ("/trades_sessions/{}/start", False, False),
+        ],
+    )
+    def test_post_update_trade_session_not_exist(
+        self, logged_in_client, url, is_paused, is_finished
+    ):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        session = create_trade_session(logged_in_client)
+        non_exist_session_id = session["session_id"] + 1
+        resp = logged_in_client.post(url.format(non_exist_session_id))
+        assert resp.status_code == 404
 
     def test_get_trades(self, logged_in_client):
         resp = logged_in_client.get("/trades/")
