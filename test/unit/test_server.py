@@ -286,7 +286,7 @@ class TestDatabaseBindings:
 
     def test_add_trading_session(self):
         trading_session_ = trading_session(
-            username="foo", ticker="bar", start_time=datetime.now()
+            username="foo", ticker="bar", start_time=datetime.utcnow()
         )
         db.session.add(trading_session_)
         db.session.commit()
