@@ -49,6 +49,11 @@ def client():
 
 
 class TestBasicFlaskApp:
+    def test_static_files(self, client):
+        resp = client.get("/static/stylesheet.css")
+        assert resp.status_code == 200
+        assert resp.content_type == "text/css; charset=utf-8"
+
     @pytest.mark.parametrize("page", ["/", "/api", "/register", "/login/"])
     def test_page_no_login_access(self, client, page):
         resp = client.get(page)
@@ -102,6 +107,58 @@ class TestBasicFlaskApp:
         assert resp.status_code == 200
         resp = client.get("/logout/")
         assert resp.status_code == 302
+
+    def test_login_post_invalid_user(self, client):
+        """register a user and attempt a login"""
+        # setup empty the user table
+        db.session.query(User).delete()
+        db.session.commit()
+
+        resp = client.post("/register", data={"email": "foo", "psw": "bar"})
+        assert resp.status_code == 302
+        assert "login" in resp.location
+
+        resp = client.get("/login/")
+        soup = BeautifulSoup(resp.data, "html.parser")
+        csrf_token = soup.find(id="csrf_token")["value"]
+
+        resp = client.post(
+            "/login/",
+            data=dict(
+                username="INVALID USERNAME",
+                password="bar",
+                next="/",
+                csrf_token=csrf_token,
+            ),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 401
+
+    def test_login_post_invalid_password(self, client):
+        """register a user and attempt a login"""
+        # setup empty the user table
+        db.session.query(User).delete()
+        db.session.commit()
+
+        resp = client.post("/register", data={"email": "foo", "psw": "bar"})
+        assert resp.status_code == 302
+        assert "login" in resp.location
+
+        resp = client.get("/login/")
+        soup = BeautifulSoup(resp.data, "html.parser")
+        csrf_token = soup.find(id="csrf_token")["value"]
+
+        resp = client.post(
+            "/login/",
+            data=dict(
+                username="foo",
+                password="INVALID PASSWORD",
+                next="/",
+                csrf_token=csrf_token,
+            ),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 401
 
 
 @pytest.fixture(scope="module")
@@ -203,6 +260,18 @@ class TestLoggedInFlaskRestxApp:
         assert resp.is_json
         assert resp.json["session_id"] == session["session_id"]
 
+    def test_get_trades_session_not_exist(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        session = create_trade_session(logged_in_client)
+        non_exist_session_id = session["session_id"] + 1
+
+        resp = logged_in_client.get(f"/trades_sessions/{non_exist_session_id}")
+        assert resp.status_code == 404
+
     @pytest.mark.parametrize(
         "url,is_paused,is_finished",
         [
@@ -222,21 +291,45 @@ class TestLoggedInFlaskRestxApp:
         assert resp.json["is_finished"] == is_finished
         assert resp.json["is_paused"] == is_paused
 
+    @pytest.mark.parametrize(
+        "url,is_paused,is_finished",
+        [
+            ("/trades_sessions/{}/pause", True, False),
+            ("/trades_sessions/{}/finish", False, True),
+            ("/trades_sessions/{}/start", False, False),
+        ],
+    )
+    def test_post_update_trade_session_not_exist(
+        self, logged_in_client, url, is_paused, is_finished
+    ):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        session = create_trade_session(logged_in_client)
+        non_exist_session_id = session["session_id"] + 1
+        resp = logged_in_client.post(url.format(non_exist_session_id))
+        assert resp.status_code == 404
+
     def test_get_trades(self, logged_in_client):
         resp = logged_in_client.get("/trades/")
         assert resp.status_code == 200
         assert resp.is_json
 
-    def test_post_trade(self, logged_in_client):
+    @pytest.mark.parametrize("trade_type", ["BUY", "SELL"])
+    @pytest.mark.parametrize("price", [1, 1000])
+    @pytest.mark.parametrize("volume", [1, 1000])
+    def test_post_trade(self, logged_in_client, trade_type, price, volume):
         session = create_trade_session(logged_in_client)
         resp = logged_in_client.post(
             "/trades/",
             data=json.dumps(
                 {
                     "session_id": session["session_id"],
-                    "trade_type": "BUY",
-                    "price": 1,
-                    "volume": 1,
+                    "trade_type": trade_type,
+                    "price": price,
+                    "volume": volume,
                     "time_stamp": "2020-04-04T20:43:41.225Z",
                 }
             ),
@@ -245,6 +338,9 @@ class TestLoggedInFlaskRestxApp:
         assert resp.status_code == 201
         assert resp.is_json
         assert resp.json["trade_id"]
+        assert resp.json["trade_type"] == trade_type
+        assert resp.json["price"] == price
+        assert resp.json["volume"] == volume
 
     def test_post_trade_bad_trade_type(self, logged_in_client):
         session = create_trade_session(logged_in_client)
@@ -253,6 +349,63 @@ class TestLoggedInFlaskRestxApp:
             data=json.dumps(
                 {
                     "session_id": session["session_id"],
+                    "trade_type": "INVALID TYPE",
+                    "price": 1,
+                    "volume": 1,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("price", [0, -1, -1000, 0.0, -1.0, -1000.0])
+    def test_post_trade_bad_price(self, logged_in_client, price):
+        session = create_trade_session(logged_in_client)
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": session["session_id"],
+                    "trade_type": "BUY",
+                    "price": price,
+                    "volume": 1,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("volume", [0, -1, -1000, 0.0, -1.0, -1000.0])
+    def test_post_trade_bad_volume(self, logged_in_client, volume):
+        session = create_trade_session(logged_in_client)
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": session["session_id"],
+                    "trade_type": "BUY",
+                    "price": 1,
+                    "volume": volume,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
+
+    def test_post_trade_no_session(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": 0,  # since all trade sessions are deleted session_id point to nothing
                     "trade_type": "BUY",
                     "price": 1,
                     "volume": 1,
@@ -261,17 +414,36 @@ class TestLoggedInFlaskRestxApp:
             ),
             content_type="application/json",
         )
-        assert resp.status_code == 201
-        assert resp.is_json
-        assert resp.json["trade_id"]
+        assert resp.status_code == 404
 
     def test_get_trade(self, logged_in_client):
-        trade = create_trade(logged_in_client)
-        trade_id = trade["trade_id"]
+        trade_ = create_trade(logged_in_client)
+        trade_id = trade_["trade_id"]
         resp = logged_in_client.get(f"/trades/{trade_id}")
         assert resp.status_code == 200
         assert resp.is_json
         assert resp.json["trade_id"] == trade_id
+
+    def test_get_trade_no_session(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        trade_id = 0
+        resp = logged_in_client.get(f"/trades/{trade_id}")
+        assert resp.status_code == 404
+
+    def test_get_trade_not_exist(self, logged_in_client):
+        # create a trade session and a trade
+        trade_ = create_trade(logged_in_client)
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.commit()
+
+        trade_id = trade_["trade_id"]
+        resp = logged_in_client.get(f"/trades/{trade_id}")
+        assert resp.status_code == 404
 
 
 class TestDatabaseBindings:
@@ -284,20 +456,53 @@ class TestDatabaseBindings:
         assert user.id is not None
         assert user.to_dict()
 
-    def test_add_trading_session(self):
+    def test_add_and_get_trading_session(self):
+        # test add the trade session
+        trading_session_add = trading_session(
+            username="foo", ticker="bar", start_time=datetime.utcnow()
+        )
+        db.session.add(trading_session_add)
+        db.session.commit()
+        assert trading_session_add.session_id is not None
+        assert trading_session_add.to_dict()
+
+        # test get the trade session
+        trading_session_get = (
+            db.session.query(trading_session)
+            .filter(trading_session.session_id == trading_session_add.session_id)
+            .first()
+        )
+        assert trading_session_get
+        assert trading_session_get.session_id is not None
+        assert trading_session_get.to_dict()
+
+    def test_add_and_get_trade(self):
+        # add the required trading session
         trading_session_ = trading_session(
             username="foo", ticker="bar", start_time=datetime.utcnow()
         )
         db.session.add(trading_session_)
         db.session.commit()
-        assert trading_session_.session_id is not None
-        assert trading_session_.to_dict()
 
-    def test_get_trade(self):
-        trade_ = db.session.query(trade).first()
-        assert trade_
-        assert trade_.trade_id is not None
-        assert trade_.to_dict()
+        # test add the trade
+        trade_add = trade(
+            time_stamp=datetime.utcnow(),
+            session_id=trading_session_.session_id,
+            trade_type="BUY",
+            volume=1,
+            price=1,
+        )
+        db.session.add(trade_add)
+        db.session.commit()
+        assert trade_add.trade_id is not None
+
+        # test get the trade
+        trade_get = (
+            db.session.query(trade).filter(trade.trade_id == trade_add.trade_id).first()
+        )
+        assert trade_get
+        assert trade_get.trade_id is not None
+        assert trade_get.to_dict()
 
     def test_get_stock_prediction(self):
         stock_prediction_ = db.session.query(stock_prediction).first()
