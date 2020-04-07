@@ -395,13 +395,55 @@ class TestLoggedInFlaskRestxApp:
         )
         assert resp.status_code == 400
 
+    def test_post_trade_no_session(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": 0,  # since all trade sessions are deleted session_id point to nothing
+                    "trade_type": "BUY",
+                    "price": 1,
+                    "volume": 1,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 404
+
     def test_get_trade(self, logged_in_client):
-        trade = create_trade(logged_in_client)
-        trade_id = trade["trade_id"]
+        trade_ = create_trade(logged_in_client)
+        trade_id = trade_["trade_id"]
         resp = logged_in_client.get(f"/trades/{trade_id}")
         assert resp.status_code == 200
         assert resp.is_json
         assert resp.json["trade_id"] == trade_id
+
+    def test_get_trade_no_session(self, logged_in_client):
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.query(trading_session).delete()
+        db.session.commit()
+
+        trade_id = 0
+        resp = logged_in_client.get(f"/trades/{trade_id}")
+        assert resp.status_code == 404
+
+    def test_get_trade_not_exist(self, logged_in_client):
+        # create a trade session and a trade
+        trade_ = create_trade(logged_in_client)
+        # setup delete all trade sessions
+        db.session.query(trade).delete()
+        db.session.commit()
+
+        trade_id = trade_["trade_id"]
+        resp = logged_in_client.get(f"/trades/{trade_id}")
+        assert resp.status_code == 404
 
 
 class TestDatabaseBindings:
