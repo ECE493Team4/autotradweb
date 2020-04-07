@@ -103,6 +103,58 @@ class TestBasicFlaskApp:
         resp = client.get("/logout/")
         assert resp.status_code == 302
 
+    def test_login_post_invalid_user(self, client):
+        """register a user and attempt a login"""
+        # setup empty the user table
+        db.session.query(User).delete()
+        db.session.commit()
+
+        resp = client.post("/register", data={"email": "foo", "psw": "bar"})
+        assert resp.status_code == 302
+        assert "login" in resp.location
+
+        resp = client.get("/login/")
+        soup = BeautifulSoup(resp.data, "html.parser")
+        csrf_token = soup.find(id="csrf_token")["value"]
+
+        resp = client.post(
+            "/login/",
+            data=dict(
+                username="INVALID USERNAME",
+                password="bar",
+                next="/",
+                csrf_token=csrf_token,
+            ),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 401
+
+    def test_login_post_invalid_password(self, client):
+        """register a user and attempt a login"""
+        # setup empty the user table
+        db.session.query(User).delete()
+        db.session.commit()
+
+        resp = client.post("/register", data={"email": "foo", "psw": "bar"})
+        assert resp.status_code == 302
+        assert "login" in resp.location
+
+        resp = client.get("/login/")
+        soup = BeautifulSoup(resp.data, "html.parser")
+        csrf_token = soup.find(id="csrf_token")["value"]
+
+        resp = client.post(
+            "/login/",
+            data=dict(
+                username="foo",
+                password="INVALID PASSWORD",
+                next="/",
+                csrf_token=csrf_token,
+            ),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 401
+
 
 @pytest.fixture(scope="module")
 def logged_in_client(client):
