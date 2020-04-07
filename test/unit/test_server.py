@@ -317,16 +317,19 @@ class TestLoggedInFlaskRestxApp:
         assert resp.status_code == 200
         assert resp.is_json
 
-    def test_post_trade(self, logged_in_client):
+    @pytest.mark.parametrize("trade_type", ["BUY", "SELL"])
+    @pytest.mark.parametrize("price", [1, 1000])
+    @pytest.mark.parametrize("volume", [1, 1000])
+    def test_post_trade(self, logged_in_client, trade_type, price, volume):
         session = create_trade_session(logged_in_client)
         resp = logged_in_client.post(
             "/trades/",
             data=json.dumps(
                 {
                     "session_id": session["session_id"],
-                    "trade_type": "BUY",
-                    "price": 1,
-                    "volume": 1,
+                    "trade_type": trade_type,
+                    "price": price,
+                    "volume": volume,
                     "time_stamp": "2020-04-04T20:43:41.225Z",
                 }
             ),
@@ -335,6 +338,9 @@ class TestLoggedInFlaskRestxApp:
         assert resp.status_code == 201
         assert resp.is_json
         assert resp.json["trade_id"]
+        assert resp.json["trade_type"] == trade_type
+        assert resp.json["price"] == price
+        assert resp.json["volume"] == volume
 
     def test_post_trade_bad_trade_type(self, logged_in_client):
         session = create_trade_session(logged_in_client)
@@ -343,7 +349,7 @@ class TestLoggedInFlaskRestxApp:
             data=json.dumps(
                 {
                     "session_id": session["session_id"],
-                    "trade_type": "BUY",
+                    "trade_type": "INVALID TYPE",
                     "price": 1,
                     "volume": 1,
                     "time_stamp": "2020-04-04T20:43:41.225Z",
@@ -351,9 +357,43 @@ class TestLoggedInFlaskRestxApp:
             ),
             content_type="application/json",
         )
-        assert resp.status_code == 201
-        assert resp.is_json
-        assert resp.json["trade_id"]
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("price", [0, -1, -1000, 0.0, -1.0, -1000.0])
+    def test_post_trade_bad_price(self, logged_in_client, price):
+        session = create_trade_session(logged_in_client)
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": session["session_id"],
+                    "trade_type": "BUY",
+                    "price": price,
+                    "volume": 1,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("volume", [0, -1, -1000, 0.0, -1.0, -1000.0])
+    def test_post_trade_bad_volume(self, logged_in_client, volume):
+        session = create_trade_session(logged_in_client)
+        resp = logged_in_client.post(
+            "/trades/",
+            data=json.dumps(
+                {
+                    "session_id": session["session_id"],
+                    "trade_type": "BUY",
+                    "price": 1,
+                    "volume": volume,
+                    "time_stamp": "2020-04-04T20:43:41.225Z",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
 
     def test_get_trade(self, logged_in_client):
         trade = create_trade(logged_in_client)
