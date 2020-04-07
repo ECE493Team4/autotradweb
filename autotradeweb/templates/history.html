@@ -6,13 +6,14 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='sortable-theme-light.css') }}"/>
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='history_stylesheet.css') }}"/>
+          href="{{ url_for('static', filename='stylesheet.css') }}"/>
     <script type="text/javascript"
             src="{{ url_for('static', filename='sortable.min.js') }}"></script>
 </head>
 <body>
 <h1> History </h1>
 <h1> Welcome User : <span id="username"> </span></h1>
+<button class="btn"><a href="/">Home</a></button>
 
 <div id="infomation">
 </div>
@@ -55,15 +56,15 @@
                 var theHTML = "";
                 for (let i in trades_sessions) {
                     theHTML += "<div class = 'trades_session' id ='trades_session_" + trades_sessions[i].session_id + "'>";
-                    theHTML += "<div class='trades_sessions_header' >";
+                    theHTML += "<button class='trades_sessions_header collapsible' >";
                     theHTML += "<span>" + 'Session ID: ' + trades_sessions[i].session_id + " </span>";
                     theHTML += "<span>" + 'Stock Name: ' + trades_sessions[i].ticker + " </span>";
                     theHTML += "<span>" + 'Paused : ' + trades_sessions[i].is_paused + " </span>";
                     theHTML += "<span>" + 'Finished : ' + trades_sessions[i].is_finished + " </span>";
                     theHTML += "<span>" + 'Start : ' + trades_sessions[i].start_time + " </span>";
                     theHTML += "<span>" + 'End : ' + trades_sessions[i].end_time + " </span>";
-                    theHTML += "</div>";
-                    theHTML += "<div id = 'trades_info_" + trades_sessions[i].session_id + "'>";
+                    theHTML += "</button>";
+                    theHTML += "<div class = 'content' id = 'trades_info_" + trades_sessions[i].session_id + "'>";
                     theHTML += "</div>";
                     theHTML += "</div>";
                     document.getElementById("infomation").innerHTML = theHTML;
@@ -73,11 +74,11 @@
                                 alert('Something went wrong, please refresh. ');
                             } else {
                                 trades = data;
-                                // console.log(trades);
+                    
                                 const result = trades.filter(function (item) {
                                     return item.session_id == trades_sessions[i].session_id;
                                 });
-                                console.log(result);
+                                
                                 if (result.length > 0) {
                                     var html_template = "";
 
@@ -100,9 +101,35 @@
                                 }
                             }
                         });
+                        
+                        
                 }
+                callback();
             }
         });
+        
+        
+        
+        
+        var callback = function(){
+                var coll = document.getElementsByClassName("collapsible");
+                var i;
+
+                for (i = 0; i < coll.length; i++) {
+                  coll[i].nextElementSibling.style.display = "block";
+                  coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    
+                
+                    if (content.style.display == 'block'){
+                      content.style.display = 'None';
+                    } else {
+                      content.style.display = 'block';
+                    } 
+                  });
+                }
+              }
 </script>
 
 </body>
