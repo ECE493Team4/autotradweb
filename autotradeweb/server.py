@@ -198,10 +198,19 @@ external_stylesheets = [
     "/static/dash-stylesheet.css",
 ]
 
-DASH = dash.Dash(__name__, server=APP, external_stylesheets=external_stylesheets)
+DASH = dash.Dash(
+    __name__,
+    server=APP,
+    external_stylesheets=external_stylesheets,
+    suppress_callback_exceptions=True,
+)
 DASH.layout = html.Div(
     style={"overflow-x": "hidden"},
-    children=[
+    children=[dcc.Location(id="url", refresh=False), html.Div(id="page-content")],
+)
+
+dashboard_layout = html.Div(
+    [
         dash_dangerously_set_inner_html.DangerouslySetInnerHTML(  # pylint: disable=no-member
             """<div style="height:20%;background-color:black;width:100%;margin:none;display:-webkit-inline-flex">
 <div style="width:20%;text-align:center;margin:5px">
@@ -260,8 +269,28 @@ DASH.layout = html.Div(
                 )
             ]
         ),
-    ],
+    ]
 )
+
+
+@DASH.callback(
+    dash.dependencies.Output("page-content", "children"), [Input("url", "pathname")]
+)
+def display_page(pathname):
+    if pathname == "/dashboard":
+        return dashboard_layout
+    else:
+        return html.Div(
+            [
+                html.H3(children=[f"Page: {pathname} not found"]),
+                html.P(
+                    children=[
+                        "Lost? Return home ",
+                        html.A(children=["with this link"], href="/"),
+                    ]
+                ),
+            ]
+        )
 
 
 # See SRS: S.10.R.6.D.1
